@@ -9,9 +9,11 @@ import Head from 'next/head';
 import EducationalDisplay from '../components/EducationalDisplay';
 import RawContentViewer from '../components/RawContentViewer';
 import PhaseProgress from '../components/PhaseProgress';
+import ApplicationTypeSelector from '../components/ApplicationTypeSelector';
 
 export default function Home() {
   const [userInput, setUserInput] = useState('');
+  const [selectedApplicationType, setSelectedApplicationType] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentPhase, setCurrentPhase] = useState('');
   const [phaseMessage, setPhaseMessage] = useState('');
@@ -46,7 +48,8 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_input: userInput
+          user_input: userInput,
+          application_type: selectedApplicationType
         }),
       });
 
@@ -183,6 +186,11 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <ApplicationTypeSelector
+            selectedType={selectedApplicationType}
+            onApplicationTypeChange={setSelectedApplicationType}
+          />
+
           <div className="mb-4">
             <label htmlFor="userInput" className="block text-sm font-medium text-gray-700 mb-2">
               描述您想要生成的代码

@@ -114,12 +114,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T039 [US3] Implement dynamic technology detection and library selection in backend/src/services/technology_detector.py
-- [ ] T040 [US3] Add support for multiple application types (web, data processing, games, utilities) in backend/src/services/code_generation_service.py
-- [ ] T041 [US3] Create extensible prompt templates for different application categories in backend/src/services/prompt_templates.py
-- [ ] T042 [US3] Implement dependency analysis and requirements generation in backend/src/services/dependency_analyzer.py
-- [ ] T043 [US3] Add Windows compatibility validation for generated code (FR-006) in backend/src/services/compatibility_checker.py
-- [ ] T044 [US3] Enhance frontend to show available application types and technology options in frontend/src/components/ApplicationTypeSelector.tsx
+- [X] T039 [US3] CANCELLED: Deprecated technology detection in favor of universal prompt approach
+- [X] T040 [US3] COMPLETED: Universal prompt supports multiple application types (web, data processing, CLI, utilities)
+- [X] T041 [US3] CANCELLED: Deprecated template system in favor of universal prompt approach
+- [X] T042 [US3] COMPLETED: Implemented dependency analysis, validation, and online PyPI checking
+- [X] T043 [US3] COMPLETED: Added Windows compatibility validation for generated code
+- [ ] T044 [US3] CANCELLED: Frontend enhancement not required for universal prompt approach
 
 **Checkpoint**: All user stories should now be independently functional - system supports generic code generation
 
