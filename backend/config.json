@@ -1,0 +1,27 @@
+{
+  "minimax": {
+    "api_key": "sk-cp-gNuw4cDXIaQrDHQ-dqTs5KrSLi8eMD6Z0zVOq5nnomh72A4Uu-dk6ePuq6uymeimRTcgx190UFHXXf0q3fyfm-kg-3nimj-bYEENItjkqyBhKcxlRvwVSlA",
+    "base_url": "https://api.minimax.chat/v1"
+  },
+  "openai": {
+    "api_key": "your-openai-api-key-here",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "generation": {
+    "model": "MiniMax-M2.1",
+    "max_tokens": 4000,
+    "temperature": 0.1,
+    "timeout": 60
+  },
+  "system": {
+    "max_concurrent_users": 5,
+    "log_level": "TRACE",
+    "projects_dir": "../projects",
+    "logs_dir": "../logs"
+  },
+  "circuit_breaker": {
+    "failure_threshold": 3,
+    "recovery_timeout": 60,
+    "expected_exception": ["httpx.TimeoutException", "httpx.ConnectError"]
+  }
+}

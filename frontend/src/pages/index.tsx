@@ -6,6 +6,9 @@
 
 import { useState } from 'react';
 import Head from 'next/head';
+import EducationalDisplay from '../components/EducationalDisplay';
+import RawContentViewer from '../components/RawContentViewer';
+import PhaseProgress from '../components/PhaseProgress';
 
 export default function Home() {
   const [userInput, setUserInput] = useState('');
@@ -15,6 +18,12 @@ export default function Home() {
   const [thinkingTrace, setThinkingTrace] = useState('');
   const [generatedFiles, setGeneratedFiles] = useState<any>(null);
   const [error, setError] = useState('');
+
+  // New state for Phase 4 components
+  const [showEducationalDisplay, setShowEducationalDisplay] = useState(false);
+  const [showRawContentViewer, setShowRawContentViewer] = useState(false);
+  const [rawContent, setRawContent] = useState<any[]>([]);
+  const [phaseProgress, setPhaseProgress] = useState<any[]>([]);
 
   const handleGenerate = async () => {
     if (!userInput.trim()) {
@@ -64,17 +73,58 @@ export default function Home() {
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (event.type === 'phase') {
-        setCurrentPhase(data.phase);
-        setPhaseMessage(data.message);
-      } else if (event.type === 'thinking') {
-        setThinkingTrace(prev => prev + data.content);
-      } else if (event.type === 'complete') {
+      // Phase 4: Enhanced event handling for educational transparency
+      if (data.event === 'phase_update') {
+        setCurrentPhase(data.data.phase);
+        setPhaseMessage(data.data.message || '');
+
+        // Update phase progress
+        setPhaseProgress(prev => {
+          const updated = [...prev];
+          const phaseIndex = updated.findIndex(p => p.id === data.data.phase);
+          if (phaseIndex >= 0) {
+            updated[phaseIndex] = {
+              ...updated[phaseIndex],
+              status: data.data.status === 'completed' ? 'completed' : 'active'
+            };
+          }
+          return updated;
+        });
+
+        // Show educational display for new phases
+        if (data.data.status === 'active') {
+          setShowEducationalDisplay(true);
+        }
+
+      } else if (data.event === 'ai_thinking') {
+        // Raw AI thinking content
+        setRawContent(prev => [...prev, {
+          type: 'thinking',
+          content: data.data.content,
+          phase: data.data.phase,
+          timestamp: data.data.timestamp || new Date().toISOString(),
+          raw_type: data.data.raw_type
+        }]);
+
+      } else if (data.event === 'ai_content') {
+        // Raw AI generated content
+        setRawContent(prev => [...prev, {
+          type: 'content',
+          content: data.data.content,
+          phase: data.data.phase,
+          timestamp: data.data.timestamp || new Date().toISOString(),
+          raw_type: data.data.raw_type
+        }]);
+
+      } else if (data.event === 'completion') {
         // 生成完成，获取文件
         fetchGeneratedFiles(requestId);
         eventSource.close();
-      } else if (event.type === 'error') {
-        setError(data);
+        setIsGenerating(false);
+        setShowEducationalDisplay(false);
+
+      } else if (data.event === 'error') {
+        setError(data.data.message || '生成过程出错');
         setIsGenerating(false);
         eventSource.close();
       }
@@ -167,12 +217,43 @@ export default function Home() {
           </div>
         )}
 
-        {(currentPhase || phaseMessage) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-            <h3 className="text-lg font-medium text-blue-900 mb-2">
-              当前阶段: {currentPhase}
-            </h3>
-            <p className="text-blue-800">{phaseMessage}</p>
+        {/* Phase 4: Enhanced Progress Visualization */}
+        {(currentPhase || phaseProgress.length > 0) && (
+          <div className="bg-white border border-gray-200 rounded-md p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                生成进度
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEducationalDisplay(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                >
+                  📚 学习说明
+                </button>
+                <button
+                  onClick={() => setShowRawContentViewer(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm"
+                >
+                  🤖 AI 原始内容
+                </button>
+              </div>
+            </div>
+
+            <PhaseProgress
+              phases={[
+                { id: 'specify', name: 'Specify', chineseName: '需求分析', description: '分析需求，定义边界', icon: '🎯', status: phaseProgress.find(p => p.id === 'specify')?.status || (currentPhase === 'specify' ? 'active' : 'pending') },
+                { id: 'plan', name: 'Plan', chineseName: '技术设计', description: '制定技术方案', icon: '🛠️', status: phaseProgress.find(p => p.id === 'plan')?.status || (currentPhase === 'plan' ? 'active' : 'pending') },
+                { id: 'implement', name: 'Implement', chineseName: '代码实现', description: '生成可运行代码', icon: '💻', status: phaseProgress.find(p => p.id === 'implement')?.status || (currentPhase === 'implement' ? 'active' : 'pending') }
+              ]}
+              currentPhase={currentPhase}
+            />
+
+            {phaseMessage && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-blue-800 text-sm">{phaseMessage}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -219,6 +300,21 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* Phase 4: Educational Display Modal */}
+        <EducationalDisplay
+          currentPhase={currentPhase}
+          isVisible={showEducationalDisplay}
+          onClose={() => setShowEducationalDisplay(false)}
+        />
+
+        {/* Phase 4: Raw Content Viewer Modal */}
+        <RawContentViewer
+          rawContent={rawContent}
+          isVisible={showRawContentViewer}
+          onClose={() => setShowRawContentViewer(false)}
+          currentPhase={currentPhase}
+        />
       </main>
     </div>
   );

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: AI Code Flow API
-  description: API for AI-powered code generation with educational process transparency
+  description: AI-powered code generation system with process transparency and educational feedback
   version: 1.0.0
   contact:
     name: AI Code Flow Team
@@ -9,239 +9,127 @@ info:
 servers:
   - url: http://localhost:8000
     description: Development server
-  - url: https://api.codeflow.local
+  - url: https://api.ai-code-flow.com
     description: Production server
 
 paths:
-  /generate:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Verify system health and configuration status
+      operationId: getHealth
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: System configuration error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /generate-code:
     post:
-      summary: Start code generation
-      description: Initiate AI-powered code generation from natural language request
-      operationId: startCodeGeneration
+      summary: Generate code from natural language request
+      description: |
+        Process a natural language code generation request through the three-phase workflow:
+        Specify → Plan → Implement. Returns streaming response with real-time educational feedback.
+      operationId: generateCode
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CodeGenerationRequest'
-            example:
-              user_input: "帮我写个贪吃蛇"
-      responses:
-        '202':
-          description: Generation started successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenerationStartedResponse'
-              example:
-                request_id: "550e8400-e29b-41d4-a716-446655440000"
-                message: "代码生成请求已开始处理"
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "请求内容不能为空"
-        '429':
-          description: Too many concurrent requests
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "当前并发请求过多，请稍后重试"
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "服务器内部错误，请稍后重试"
-
-  /generate/{request_id}/stream:
-    get:
-      summary: Stream generation progress
-      description: Get real-time updates on code generation progress via Server-Sent Events
-      operationId: streamGenerationProgress
-      parameters:
-        - name: request_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Unique identifier for the generation request
       responses:
         '200':
-          description: Server-Sent Events stream
+          description: Code generation completed successfully
           content:
             text/event-stream:
               schema:
-                type: string
-              examples:
-                phase_update:
-                  summary: Phase progression update with raw AI content
-                  value: |
-                    event: phase
-                    data: {"phase": "specify", "message": "正在分析需求，定义功能边界..."}
-
-                    event: thinking
-                    data: {"content": "用户请求了贪吃蛇游戏，需要确定游戏规则..."}
-
-                    event: text
-                    data: {"content": "## 贪吃蛇游戏需求分析\n\n这是一个经典的贪吃蛇游戏，需要实现：\n- 蛇的移动控制\n- 食物生成\n- 碰撞检测\n- 分数统计"}
-
-                    event: phase
-                    data: {"phase": "plan", "message": "正在设计技术方案，确定使用 Pygame 库..."}
-
-                    event: text
-                    data: {"content": "### 技术方案\n\n选择 Pygame 作为游戏引擎，因为：\n- 简单易用\n- Windows 兼容性好\n- 轻量级"}
-
-                    event: phase
-                    data: {"phase": "implement", "message": "正在编写代码..."}
-
-                    event: text
-                    data: {"content": "```python\nimport pygame\nimport random\n\n# 初始化游戏..."}
-
-                    event: complete
-                    data: {"project_id": "550e8400-e29b-41d4-a716-446655440000", "main_file": "main.py", "files_count": 5}
-                error_event:
-                  summary: Error during generation
-                  value: |
-                    event: error
-                    data: {"message": "AI 服务暂时不可用，请稍后重试"}
-        '404':
-          description: Request not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "请求不存在"
-
-  /generate/{request_id}/files:
-    get:
-      summary: Get generated files
-      description: Retrieve all files generated for a completed request
-      operationId: getGeneratedFiles
-      parameters:
-        - name: request_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Unique identifier for the generation request
-      responses:
-        '200':
-          description: Generated files retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeneratedFilesResponse'
-              example:
-                project_name: "snake_game_20251231"
-                main_file: "main.py"
-                files:
-                  - path: "spec.md"
-                    content: "# 贪吃蛇游戏需求规格\n\n## 功能需求\n- 蛇的移动控制\n- 食物随机生成..."
-                    encoding: "utf-8"
-                  - path: "plan.md"
-                    content: "# 贪吃蛇游戏技术方案\n\n## 技术栈选择\n- Pygame 2.5.2\n- Python 3.11..."
-                    encoding: "utf-8"
-                  - path: "main.py"
-                    content: "import pygame\n\n# Snake game implementation..."
-                    encoding: "utf-8"
-                  - path: "requirements.txt"
-                    content: "pygame>=2.5.0\n"
-                    encoding: "utf-8"
-                  - path: "README.md"
-                    content: "# Snake Game\n\n使用方向键控制蛇..."
-                    encoding: "utf-8"
-        '404':
-          description: Request not found or not completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "请求不存在或尚未完成"
-        '425':
-          description: Request still processing
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "请求正在处理中，请稍后查看"
-
-  /generate/{request_id}/retry:
-    post:
-      summary: Retry failed generation
-      description: Retry a previously failed code generation request
-      operationId: retryGeneration
-      parameters:
-        - name: request_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Unique identifier for the failed generation request
-      responses:
-        '202':
-          description: Retry started successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenerationStartedResponse'
-              example:
-                request_id: "660e8400-e29b-41d4-a716-446655440001"
-                message: "重试请求已开始处理"
+                $ref: '#/components/schemas/StreamingResponse'
         '400':
-          description: Request not in failed state
+          description: Invalid request or VENV_NOT_ACTIVATED error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "只有失败的请求才能重试"
-        '404':
-          description: Request not found
+        '429':
+          description: Too many concurrent requests (system at capacity)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "请求不存在"
+        '500':
+          description: Internal server error or AI engine failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /health:
+  /projects/{projectId}:
     get:
-      summary: Health check
-      description: Check if the service is healthy and can handle requests
-      operationId: healthCheck
+      summary: Get generated project details
+      description: Retrieve metadata and file structure for a generated project
+      operationId: getProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique project identifier
       responses:
         '200':
-          description: Service is healthy
+          description: Project details retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthResponse'
-              example:
-                status: "healthy"
-                concurrent_requests: 2
-                max_concurrent: 5
-        '503':
-          description: Service unhealthy
+                $ref: '#/components/schemas/ProjectDetails'
+        '404':
+          description: Project not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "服务暂时不可用"
+
+  /projects/{projectId}/download:
+    get:
+      summary: Download generated project files
+      description: Download a ZIP archive containing all project files
+      operationId: downloadProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique project identifier
+      responses:
+        '200':
+          description: Project files download initiated
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="snake_game_20260101_123456.zip"'
+        '404':
+          description: Project not found or not ready for download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -254,89 +142,183 @@ components:
           type: string
           minLength: 1
           maxLength: 1000
-          description: Natural language description of desired code/application
+          description: Natural language request for code generation (supports Chinese)
           example: "帮我写个贪吃蛇"
+      additionalProperties: false
 
-    GenerationStartedResponse:
-      type: object
-      required:
-        - request_id
-        - message
-      properties:
-        request_id:
-          type: string
-          format: uuid
-          description: Unique identifier for tracking the generation request
-        message:
-          type: string
-          description: User-friendly status message in Chinese
+    StreamingResponse:
+      description: Server-Sent Events stream for real-time code generation progress
+      type: string
+      enum:
+        - phase_update
+        - content_chunk
+        - completion
+        - error
+      example: |
+        event: phase_update
+        data: {"phase": "specify", "message": "正在分析需求，定义功能边界..."}
 
-    GeneratedFilesResponse:
-      type: object
-      required:
-        - project_name
-        - main_file
-        - files
-      properties:
-        project_name:
-          type: string
-          description: Generated project name
-        main_file:
-          type: string
-          description: Path to main executable file
-        files:
-          type: array
-          items:
-            $ref: '#/components/schemas/FileInfo'
-          description: List of all generated files
+        event: content_chunk
+        data: {"type": "thinking", "content": "分析用户需求：贪吃蛇游戏需要..."}
 
-    FileInfo:
-      type: object
-      required:
-        - path
-        - content
-        - encoding
-      properties:
-        path:
-          type: string
-          description: Relative file path
-        content:
-          type: string
-          description: File content as string
-        encoding:
-          type: string
-          enum: [utf-8]
-          description: File encoding (always UTF-8 per constitution)
+        event: content_chunk
+        data: {"type": "code", "content": "import pygame\n\n# 初始化游戏..."}
+
+        event: completion
+        data: {"project_id": "123e4567-e89b-12d3-a456-426614174000", "status": "success"}
 
     HealthResponse:
       type: object
       required:
         - status
-        - concurrent_requests
-        - max_concurrent
+        - timestamp
+        - version
       properties:
         status:
           type: string
-          enum: [healthy]
-          description: Service health status
-        concurrent_requests:
+          enum: [healthy, unhealthy]
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-01T12:00:00Z"
+        version:
+          type: string
+          example: "1.0.0"
+        config_valid:
+          type: boolean
+          description: Whether backend/config.json is present and valid
+          example: true
+        venv_active:
+          type: boolean
+          description: Whether running in correct virtual environment
+          example: true
+      additionalProperties: false
+
+    ProjectDetails:
+      type: object
+      required:
+        - id
+        - project_name
+        - created_at
+        - file_structure
+        - syntax_validated
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        project_name:
+          type: string
+          example: "snake_game_20260101_123456"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-01T12:00:00Z"
+        file_structure:
+          $ref: '#/components/schemas/FileStructure'
+        dependencies:
+          type: array
+          items:
+            type: string
+          example: ["pygame"]
+        total_files:
+          type: integer
+          minimum: 1
+          example: 3
+        total_size_bytes:
           type: integer
           minimum: 0
-          description: Currently active concurrent requests
-        max_concurrent:
+          maximum: 10485760  # 10MB
+          example: 15360
+        syntax_validated:
+          type: boolean
+          description: Whether all Python files passed AST validation
+          example: true
+        main_file:
+          type: string
+          description: Path to the main executable file
+          example: "main.py"
+      additionalProperties: false
+
+    FileStructure:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+          enum: [file, directory]
+        name:
+          type: string
+        size:
           type: integer
-          description: Maximum allowed concurrent requests
+          minimum: 0
+          description: File size in bytes (only for files)
+        language:
+          type: string
+          description: Programming language (only for files)
+          example: "python"
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileStructure'
+          description: Child files/directories (only for directories)
+      additionalProperties: false
+      example:
+        type: "directory"
+        name: "snake_game_20260101_123456"
+        children:
+          - type: "file"
+            name: "main.py"
+            size: 1234
+            language: "python"
+          - type: "file"
+            name: "README.md"
+            size: 567
+            language: "markdown"
 
     ErrorResponse:
       type: object
       required:
+        - error
         - message
+        - timestamp
       properties:
+        error:
+          type: string
+          enum:
+            - VENV_NOT_ACTIVATED
+            - CONFIG_MISSING
+            - INVALID_REQUEST
+            - AI_ENGINE_ERROR
+            - TIMEOUT_ERROR
+            - VALIDATION_ERROR
+            - SYSTEM_OVERLOAD
+            - PROJECT_NOT_FOUND
+          example: AI_ENGINE_ERROR
         message:
           type: string
-          description: User-friendly error message in Chinese
-      description: Standardized error response format
+          description: Human-readable error message in Chinese
+          example: "AI 引擎暂时不可用，请稍后重试"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-01T12:00:00Z"
+        request_id:
+          type: string
+          format: uuid
+          description: Request identifier for debugging
+        retry_after:
+          type: integer
+          minimum: 0
+          description: Seconds to wait before retrying
+      additionalProperties: false
 
   securitySchemes:
-    # No authentication required per specification (open access)
-    # Rate limiting handled at application level
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (future use - currently open access)

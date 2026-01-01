@@ -50,7 +50,7 @@ MAX_CONCURRENT_REQUESTS = 5
 current_active_requests = 0
 
 
-@router.post("/generate", response_model=Dict)
+@router.post("/generate-code", response_model=Dict)
 async def start_code_generation(request: GenerateRequest, background_tasks: BackgroundTasks) -> Dict:
     """
     Start a code generation request.
@@ -97,7 +97,7 @@ async def start_code_generation(request: GenerateRequest, background_tasks: Back
         raise HTTPException(status_code=500, detail="启动代码生成失败，请稍后重试")
 
 
-@router.get("/generate/{request_id}/stream")
+@router.get("/generate-code/{request_id}/stream")
 async def stream_generation_progress(request_id: UUID):
     """
     Stream real-time progress updates for a code generation request.

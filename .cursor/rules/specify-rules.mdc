@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-31
 ## Active Technologies
 - Python 3.11 (locked by Constitution Article I) + OpenAI SDK >=1.0.0, MiniMax API (via OpenAI compatibility), FastAPI (existing) (001-ai-code-flow)
 - File system (local projects/ folder for generated code persistence) (001-ai-code-flow)
+- Python 3.11 (Backend), Node.js v20 (Frontend) + FastAPI (Backend API), MiniMax/OpenAI SDK (AI), httpx (HTTP client), Pygame (Code generation), React/Next.js (Frontend) (001-ai-code-flow)
+- File system (generated code files in projects/ folder), transient session history (001-ai-code-flow)
 
 - Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API (001-ai-code-flow)
 
@@ -25,6 +27,7 @@ cd src; pytest; ruff check .
 Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked): Follow standard conventions
 
 ## Recent Changes
+- 001-ai-code-flow: Added Python 3.11 (Backend), Node.js v20 (Frontend) + FastAPI (Backend API), MiniMax/OpenAI SDK (AI), httpx (HTTP client), Pygame (Code generation), React/Next.js (Frontend)
 - 001-ai-code-flow: Added Python 3.11 (locked by Constitution Article I) + OpenAI SDK >=1.0.0, MiniMax API (via OpenAI compatibility), FastAPI (existing)
 
 - 001-ai-code-flow: Added Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API

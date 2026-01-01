@@ -1,264 +1,403 @@
-# Quickstart: AI Code Flow MVP (Dual-Track Content Strategy)
+# Quick Start: AI Code Flow MVP
 
-**Date**: 2025-12-31
-**Feature**: AI Code Flow MVP with Dual-Track Content Strategy
+**Version**: 1.0.0
+**Last Updated**: 2026-01-01
+**Target Users**: Developers, DevOps engineers, System administrators
+
+## Overview
+
+AI Code Flow is an AI-powered code generation system that transforms natural language requests into working, executable code through a transparent three-phase process. This guide provides everything needed to set up, deploy, and operate the system.
 
 ## Prerequisites
 
 ### System Requirements
-- **Windows 10/11** (primary target platform)
-- **Node.js v20 (LTS)** - Exact version required per constitution
-- **Python 3.11** - Exact version required per constitution
-- **PowerShell** or **Command Prompt** (Windows-native scripting)
-- **MiniMax API Key** - Required for AI code generation
 
-### Environment Setup
+#### Hardware
+- **CPU**: 2+ cores (4+ recommended for concurrent users)
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 10GB free space for generated projects
+- **Network**: Stable internet connection for AI API calls
 
-#### 1. Node.js Environment (Frontend)
-```bash
-# Install Node.js v20 (LTS) - required by constitution
-# Download from: https://nodejs.org/dist/v20.17.0/node-v20.17.0-x64.msi
+#### Software
+- **Operating System**: Windows 10/11 (native compatibility required)
+- **Python**: Version 3.11 (exact match required)
+- **Node.js**: Version 20 LTS (exact match required)
+- **PowerShell**: Version 5.1+ (included with Windows)
 
-# Verify installation
-node --version  # Should show v20.x.x
-npm --version   # Should show 10.x.x
+### API Keys
+- **MiniMax API Key**: Required for AI code generation
+- **OpenAI API Key**: Alternative/fallback AI provider
 
-# Create .nvmrc and .node-version in project root
-echo "v20" > .nvmrc
-echo "20" > .node-version
-```
+## Installation
 
-#### 2. Python Environment (Backend)
-```bash
-# Install Python 3.11 - required by constitution
-# Download from: https://www.python.org/downloads/release/python-3110/
+### 1. Repository Setup
 
-# Verify installation
-python --version  # Should show Python 3.11.x
-
-# Create virtual environment (required by constitution)
-python -m venv backend\.venv
-
-# Activate virtual environment (Windows)
-backend\.venv\Scripts\activate
-
-# Verify virtual environment activation
-where python  # Should show backend\.venv\Scripts\python.exe
-```
-
-#### 3. MiniMax API Access
-```bash
-# Get API key from: https://platform.minimaxi.com/
-# Set environment variables for MiniMax API via OpenAI SDK
-setx OPENAI_API_KEY "your-minimax-api-key-here"
-setx OPENAI_BASE_URL "https://api.minimaxi.com/v1"
-
-# Test API connectivity
-python -c "import openai; client = openai.OpenAI(); print('API connection successful')"
-```
-
-## Project Setup
-
-### 1. Clone and Navigate
-```bash
-# Clone repository
+```powershell
+# Clone the repository
 git clone <repository-url>
 cd ai-code-flow
 
-# Checkout feature branch
+# Switch to the feature branch
 git checkout 001-ai-code-flow
 ```
 
 ### 2. Backend Setup
-```bash
-# Activate virtual environment
-backend\.venv\Scripts\activate
 
-# Install dependencies (exact versions per constitution)
-pip install fastapi==0.109.0
-pip install uvicorn==0.27.0
-pip install openai>=1.0.0
-pip install python-multipart==0.0.6
-pip install sse-starlette==2.0.0
-
-# Verify installation
-pip list
-```
-
-### 3. Frontend Setup
-```bash
-# Install dependencies (local packages only per constitution)
-npm install @anthropic-ai/sdk
-npm install next@latest
-npm install react@latest
-npm install react-dom@latest
-npm install tailwindcss
-npm install @types/node
-npm install @types/react
-npm install typescript
-
-# Verify installation
-npm list
-```
-
-## Development Workflow
-
-### 1. Start Backend (Terminal 1)
-```bash
-# Activate virtual environment
-backend\.venv\Scripts\activate
-
-# Start FastAPI server
+```powershell
+# Navigate to backend directory
 cd backend
-python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Create virtual environment with Windows-compatible path
+python -m venv .venv
+
+# Activate virtual environment
+.venv\Scripts\activate
+
+# Install dependencies (exact versions from requirements.txt)
+pip install -r requirements.txt
+
+# Verify Python version and environment
+python --version  # Should show Python 3.11.x
+python -c "import sys; print(sys.prefix)"  # Should end with backend\.venv
 ```
 
-### 2. Start Frontend (Terminal 2)
-```bash
-# Start Next.js development server
+### 3. Configuration
+
+```powershell
+# Create required configuration file
+# File: backend/config.json
+{
+  "minimax": {
+    "api_key": "your-minimax-api-key-here",
+    "base_url": "https://api.minimax.chat/v1"
+  },
+  "openai": {
+    "api_key": "your-openai-api-key-here",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "generation": {
+    "model": "MiniMax-Text-01",
+    "max_tokens": 4000,
+    "temperature": 0.1,
+    "timeout": 60
+  },
+  "system": {
+    "max_concurrent_users": 5,
+    "log_level": "TRACE",
+    "projects_dir": "../projects"
+  }
+}
+```
+
+### 4. Frontend Setup (Optional)
+
+```powershell
+# Navigate to frontend directory
+cd ../frontend
+
+# Install Node.js dependencies
+npm install
+
+# Verify Node.js version
+node --version  # Should show v20.x.x
+```
+
+## Quick Start Commands
+
+### Development Mode
+
+```powershell
+# Start backend server (from backend/ directory)
+.venv\Scripts\activate
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Start frontend server (from frontend/ directory, new terminal)
 npm run dev
 ```
 
-### 3. Verify Setup
-```bash
-# Check backend health
+### Production Deployment
+
+```powershell
+# Backend production start
+.venv\Scripts\activate
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Frontend production build
+npm run build
+npm run start
+```
+
+## Testing the System
+
+### 1. Health Check
+
+```powershell
+# Verify system is running correctly
 curl http://localhost:8000/health
 
-# Open frontend in browser
-# http://localhost:3000
+# Expected response:
+{
+  "status": "healthy",
+  "timestamp": "2026-01-01T12:00:00Z",
+  "version": "1.0.0",
+  "config_valid": true,
+  "venv_active": true
+}
 ```
 
-## Testing
+### 2. Code Generation Test
 
-### Backend Tests (Constitution Required)
-```bash
-# Activate virtual environment
-backend\.venv\Scripts\activate
+```powershell
+# Test code generation with curl
+curl -X POST http://localhost:8000/generate-code \
+  -H "Content-Type: application/json" \
+  -d '{"user_input": "帮我写个简单的计算器"}' \
+  -H "Accept: text/event-stream"
 
-# Run pytest integration tests
-cd backend
-python -m pytest tests/integration/ -v
-
-# Run contract tests
-python -m pytest tests/contract/ -v
+# Or test with PowerShell
+Invoke-WebRequest -Uri "http://localhost:8000/generate-code" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{"user_input": "帮我写个简单的计算器"}'
 ```
 
-### Frontend E2E Tests (Constitution Required)
-```bash
-# Install Playwright browsers
-npx playwright install
+### 3. Web Interface Test
 
-# Run E2E tests
-npx playwright test tests/e2e/ --headed
-```
-
-## Code Generation Demo
-
-### 1. Basic Snake Game Generation
-1. Open browser to `http://localhost:3000`
-2. Enter: "帮我写个贪吃蛇"
-3. Watch the three phases:
+1. Open browser to `http://localhost:3000` (frontend)
+2. Enter "帮我写个贪吃蛇" in the input field
+3. Observe the three-phase process:
    - **Specify**: "正在分析需求，定义功能边界..."
    - **Plan**: "正在设计技术方案，确定使用 Pygame 库..."
    - **Implement**: "正在编写代码..."
 4. Download the generated `main.py` file
-5. Run the game: `python main.py`
-
-### 2. Test Error Recovery
-1. Temporarily disable internet connection
-2. Submit a generation request
-3. Observe error message: "AI 服务暂时不可用，请稍后重试"
-4. Restore connection and click retry
-
-### 3. Test Windows Compatibility
-1. Verify all generated files use UTF-8 encoding
-2. Check that file paths work correctly on Windows
-3. Confirm no GBK encoding issues in Chinese comments
-
-## Constitution Compliance Verification
-
-### Runtime Environment
-- ✅ Node.js v20 (LTS) confirmed
-- ✅ Python 3.11 confirmed
-- ✅ Virtual environment activated
-- ✅ No global package installations
-
-### Windows Compatibility
-- ✅ PowerShell scripts compatible
-- ✅ pathlib.Path used for file operations
-- ✅ UTF-8 encoding enforced
-- ✅ Windows path separators handled
-
-### Language Standards
-- ✅ English in source code and comments
-- ✅ Chinese in UI and error messages
-
-### Testing Standards
-- ✅ pytest for backend integration
-- ✅ Playwright for E2E testing
-- ✅ Zero startup errors verified
+5. Run the downloaded code: `python main.py`
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Backend won't start**
-```bash
-# Check Python version
-python --version  # Must be 3.11.x
+#### VENV_NOT_ACTIVATED Error
 
-# Check virtual environment
-backend\.venv\Scripts\activate
-where python  # Must show virtual environment path
+**Symptoms**: System returns `{"error": "VENV_NOT_ACTIVATED", "message": "虚拟环境未激活"}`
 
-# Check dependencies
-pip list | findstr fastapi
+**Solution**:
+```powershell
+# Ensure you're in the backend directory
+cd backend
+
+# Activate virtual environment
+.venv\Scripts\activate
+
+# Verify activation
+python -c "import sys; print('Active' if 'backend\\.venv' in sys.prefix else 'Inactive')"
 ```
 
-**Frontend build fails**
-```bash
-# Check Node.js version
-node --version  # Must be v20.x.x
+#### CONFIG_MISSING Error
 
-# Clear npm cache
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
+**Symptoms**: System returns `{"error": "CONFIG_MISSING", "message": "配置文件缺失"}`
+
+**Solution**:
+```powershell
+# Verify config.json exists and is valid JSON
+Test-Path backend/config.json
+Get-Content backend/config.json | ConvertFrom-Json
 ```
 
-**AI service connection fails**
-```bash
-# Check environment variables
-echo %OPENAI_API_KEY%
-echo %OPENAI_BASE_URL%
+#### AI_ENGINE_ERROR
 
-# Test API connectivity (OpenAI SDK format)
-curl -X POST https://api.minimaxi.com/v1/chat/completions \
-  -H "Authorization: Bearer %OPENAI_API_KEY%" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "MiniMax-M2.1", "messages": [{"role": "user", "content": "Hello"}], "max_tokens": 10}'
+**Symptoms**: Code generation fails with AI engine errors
+
+**Solutions**:
+1. **Check API Keys**: Verify MiniMax and OpenAI API keys are valid
+2. **Network Connectivity**: Ensure stable internet connection
+3. **Rate Limits**: Wait and retry if hitting API limits
+4. **Fallback**: System automatically tries OpenAI if MiniMax fails
+
+#### Windows Compatibility Issues
+
+**Symptoms**: Generated code fails to run on Windows
+
+**Solutions**:
+1. **Path Separators**: Ensure code uses `pathlib.Path` for file operations
+2. **Encoding**: Verify all files use UTF-8 encoding
+3. **Dependencies**: Confirm Pygame and other libraries are Windows-compatible
+
+### Debug Logging
+
+```powershell
+# Enable maximum logging for troubleshooting
+# Edit backend/config.json:
+{
+  "system": {
+    "log_level": "TRACE"
+  }
+}
+
+# View logs in real-time
+Get-Content logs/system_trace.jsonl -Wait -Tail 10
 ```
 
-**File encoding issues**
-```bash
-# Check generated files
-type main.py  # Should display correctly in Chinese
-# If garbled, files weren't saved with UTF-8 encoding
+## API Reference
+
+### Core Endpoints
+
+#### POST /generate-code
+Generate code from natural language input.
+
+**Request**:
+```json
+{
+  "user_input": "帮我写个贪吃蛇"
+}
 ```
 
-### Getting Help
+**Response**: Server-Sent Events stream with real-time progress.
 
-- **MiniMax API Issues**: Email Model@minimaxi.com
-- **Constitution Compliance**: Refer to `.specify/memory/constitution.md`
-- **Development Issues**: Check GitHub issues or create new issue
+#### GET /health
+System health check.
 
-## Next Steps
+**Response**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-01T12:00:00Z",
+  "version": "1.0.0",
+  "config_valid": true,
+  "venv_active": true
+}
+```
 
-After successful setup and testing:
+#### GET /projects/{id}
+Get project details.
 
-1. **Create Tasks**: Run `/speckit.tasks` to break down implementation
-2. **Start Development**: Begin with foundational backend components
-3. **Integration Testing**: Verify end-to-end code generation flow
-4. **Performance Validation**: Confirm 5-minute generation time limit
+#### GET /projects/{id}/download
+Download generated project files.
 
-The MVP is ready for implementation with all prerequisites validated and constitution compliance confirmed.
+### Streaming Events
+
+The system uses Server-Sent Events for real-time feedback:
+
+- `phase_update`: Phase transitions with educational messages
+- `content_chunk`: Raw AI output (thinking, code, documentation)
+- `completion`: Generation complete with project details
+- `error`: Generation failed with retry options
+
+## Performance Tuning
+
+### Concurrent Users
+- **Maximum**: 5 concurrent users (configurable in config.json)
+- **Monitoring**: Check active requests via health endpoint
+- **Scaling**: Increase worker processes for higher concurrency
+
+### Response Times
+- **Target**: <5 minutes per code generation request
+- **AI API**: 60-second timeout per call
+- **Frontend**: 120-second circuit breaker timeout
+
+### Resource Usage
+- **Memory**: ~100MB per active generation request
+- **Storage**: ~10MB per generated project
+- **Cleanup**: Projects persist indefinitely, implement rotation if needed
+
+## Security Considerations
+
+### Environment Isolation
+- **Virtual Environment**: Mandatory backend\.venv usage
+- **No Global Installs**: All dependencies isolated
+- **Path Validation**: Runtime verification of environment paths
+
+### API Security
+- **Current**: Open access (no authentication required)
+- **Future**: API key authentication planned
+- **Network**: HTTPS recommended for production
+
+### Data Handling
+- **Generated Code**: Stored in local filesystem
+- **Session Data**: Transient (not persisted)
+- **Logs**: Comprehensive TRACE logging with no data sanitization
+
+## Monitoring & Maintenance
+
+### Key Metrics
+
+```powershell
+# Monitor system health
+while ($true) {
+  $health = Invoke-RestMethod -Uri "http://localhost:8000/health"
+  Write-Host "Status: $($health.status), Active: $($health.activeRequests)"
+  Start-Sleep -Seconds 30
+}
+```
+
+### Log Analysis
+
+```powershell
+# Search for errors in logs
+Select-String -Path logs/system_trace.jsonl -Pattern "ERROR" |
+  Select-Object -Last 10
+
+# Monitor API usage
+Select-String -Path logs/system_trace.jsonl -Pattern "minimax|openai" |
+  Measure-Object
+```
+
+### Backup Strategy
+
+```powershell
+# Backup generated projects
+Compress-Archive -Path projects/ -DestinationPath "backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').zip"
+
+# Backup configuration
+Copy-Item backend/config.json "config_backup_$(Get-Date -Format 'yyyyMMdd').json"
+```
+
+## Development Workflow
+
+### Code Generation Process
+
+1. **User Request**: Natural language input via web interface
+2. **Phase 1 - Specify**: AI analyzes requirements, defines boundaries
+3. **Phase 2 - Plan**: AI designs technical approach, selects libraries
+4. **Phase 3 - Implement**: AI generates executable code
+5. **Validation**: AST parsing ensures syntax correctness
+6. **Delivery**: User downloads working project files
+
+### Educational Features
+
+- **Process Transparency**: Users see AI reasoning in real-time
+- **Phase Messages**: Chinese educational feedback for each step
+- **Raw Content**: Preserves AI explanations and documentation
+- **Retry Capability**: Failed requests can be retried with clear errors
+
+## Support & Resources
+
+### Documentation
+- `specs/001-ai-code-flow/spec.md`: Complete feature specification
+- `specs/001-ai-code-flow/plan.md`: Implementation planning details
+- `contracts/`: API specifications and protocols
+
+### Community
+- **Issues**: Report bugs and request features
+- **Discussions**: Share use cases and best practices
+- **Contributing**: See contribution guidelines for code changes
+
+### Professional Services
+- **Setup Assistance**: Contact for complex deployment scenarios
+- **Custom Integration**: Enterprise integration support
+- **Training**: Educational workshops on AI-assisted development
+
+---
+
+## Success Checklist
+
+- [ ] System starts without errors on Windows
+- [ ] Health endpoint returns "healthy" status
+- [ ] Code generation completes in <5 minutes
+- [ ] Generated code runs without syntax errors
+- [ ] Users can identify the three development phases
+- [ ] OpenAI SDK migration confirmed working
+- [ ] All code files pass AST validation
+- [ ] SSE streams contain educational content
+- [ ] Projects include complete documentation artifacts
+
+**Ready for production when all checklist items pass!**

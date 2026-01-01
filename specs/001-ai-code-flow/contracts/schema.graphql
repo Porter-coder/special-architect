@@ -1,0 +1,322 @@
+"""
+AI Code Flow GraphQL Schema
+Provides flexible querying for code generation projects and system status
+"""
+
+type Query {
+  """Get system health and configuration status"""
+  health: HealthResponse!
+
+  """Get details of a specific generated project"""
+  project(id: ID!): Project
+
+  """List projects with filtering and pagination"""
+  projects(
+    limit: Int = 10
+    offset: Int = 0
+    status: ProjectStatus
+  ): ProjectConnection!
+}
+
+type Mutation {
+  """
+  Generate code from natural language request
+  Returns streaming response with real-time progress updates
+  """
+  generateCode(input: CodeGenerationInput!): CodeGenerationPayload!
+}
+
+type Subscription {
+  """Subscribe to code generation progress for a specific request"""
+  codeGenerationProgress(requestId: ID!): GenerationEvent!
+}
+
+# Input Types
+
+input CodeGenerationInput {
+  """Natural language request for code generation (supports Chinese)"""
+  userInput: String!
+}
+
+# Response Types
+
+type CodeGenerationPayload {
+  """Unique identifier for tracking this generation request"""
+  requestId: ID!
+
+  """Current status of the generation process"""
+  status: GenerationStatus!
+
+  """Estimated completion time in seconds (best effort)"""
+  estimatedDuration: Int
+}
+
+type HealthResponse {
+  """Overall system health status"""
+  status: HealthStatus!
+
+  """ISO 8601 timestamp of health check"""
+  timestamp: String!
+
+  """System version"""
+  version: String!
+
+  """Whether backend configuration is valid"""
+  configValid: Boolean!
+
+  """Whether system is running in correct virtual environment"""
+  venvActive: Boolean!
+
+  """Current number of active generation requests"""
+  activeRequests: Int!
+
+  """Maximum concurrent requests supported"""
+  maxConcurrentRequests: Int!
+}
+
+type Project {
+  """Unique project identifier"""
+  id: ID!
+
+  """Human-readable project name"""
+  name: String!
+
+  """Original user request that generated this project"""
+  userInput: String!
+
+  """Project creation timestamp"""
+  createdAt: String!
+
+  """Current project status"""
+  status: ProjectStatus!
+
+  """Whether all code files passed syntax validation"""
+  syntaxValidated: Boolean!
+
+  """Main executable file path"""
+  mainFile: String
+
+  """Total number of files in project"""
+  totalFiles: Int!
+
+  """Total project size in bytes"""
+  totalSizeBytes: Int!
+
+  """List of project dependencies"""
+  dependencies: [String!]!
+
+  """Complete file structure"""
+  fileStructure: FileNode!
+
+  """Generation phases with their execution details"""
+  phases: [GenerationPhase!]!
+}
+
+type ProjectConnection {
+  """List of projects"""
+  edges: [ProjectEdge!]!
+
+  """Pagination information"""
+  pageInfo: PageInfo!
+
+  """Total count of projects matching the filter"""
+  totalCount: Int!
+}
+
+type ProjectEdge {
+  """The project"""
+  node: Project!
+
+  """Cursor for pagination"""
+  cursor: String!
+}
+
+type PageInfo {
+  """Whether there are more results after this page"""
+  hasNextPage: Boolean!
+
+  """Whether there are results before this page"""
+  hasPreviousPage: Boolean!
+
+  """Cursor for the first result in this page"""
+  startCursor: String
+
+  """Cursor for the last result in this page"""
+  endCursor: String
+}
+
+type FileNode {
+  """File or directory name"""
+  name: String!
+
+  """Whether this is a file or directory"""
+  type: FileNodeType!
+
+  """File size in bytes (null for directories)"""
+  size: Int
+
+  """Programming language (null for directories or unknown)"""
+  language: String
+
+  """Child files/directories (null for files)"""
+  children: [FileNode!]
+}
+
+type GenerationPhase {
+  """Phase type"""
+  type: PhaseType!
+
+  """Phase execution status"""
+  status: PhaseStatus!
+
+  """Educational message displayed during this phase"""
+  message: String!
+
+  """Phase start timestamp"""
+  startedAt: String
+
+  """Phase completion timestamp"""
+  completedAt: String
+
+  """Phase execution duration in seconds"""
+  duration: Int
+}
+
+# Union Types
+
+union GenerationEvent = PhaseUpdateEvent | ContentChunkEvent | CompletionEvent | ErrorEvent
+
+type PhaseUpdateEvent {
+  """Event type identifier"""
+  type: String!
+
+  """Phase being updated"""
+  phase: PhaseType!
+
+  """Educational message for this phase"""
+  message: String!
+
+  """Event timestamp"""
+  timestamp: String!
+}
+
+type ContentChunkEvent {
+  """Event type identifier"""
+  type: String!
+
+  """Content type"""
+  contentType: ContentType!
+
+  """Content chunk"""
+  content: String!
+
+  """Current phase"""
+  phase: PhaseType!
+
+  """Sequence number for ordering"""
+  sequence: Int
+}
+
+type CompletionEvent {
+  """Event type identifier"""
+  type: String!
+
+  """Generated project"""
+  project: Project!
+
+  """Completion status"""
+  status: CompletionStatus!
+}
+
+type ErrorEvent {
+  """Event type identifier"""
+  type: String!
+
+  """Error type"""
+  error: GenerationError!
+
+  """Human-readable error message in Chinese"""
+  message: String!
+
+  """Whether the error is retryable"""
+  retryable: Boolean!
+
+  """Seconds to wait before retrying"""
+  retryAfter: Int
+
+  """Request identifier for debugging"""
+  requestId: ID
+}
+
+# Enums
+
+enum HealthStatus {
+  HEALTHY
+  UNHEALTHY
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ProjectStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  VALIDATION_FAILED
+}
+
+enum FileNodeType {
+  FILE
+  DIRECTORY
+}
+
+enum PhaseType {
+  SPECIFY
+  PLAN
+  IMPLEMENT
+}
+
+enum PhaseStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum ContentType {
+  THINKING
+  CODE
+  DOCUMENTATION
+}
+
+enum CompletionStatus {
+  SUCCESS
+  PARTIAL_SUCCESS
+  VALIDATION_FAILED
+}
+
+enum GenerationError {
+  VENV_NOT_ACTIVATED
+  CONFIG_MISSING
+  INVALID_REQUEST
+  AI_ENGINE_ERROR
+  TIMEOUT_ERROR
+  VALIDATION_ERROR
+  SYSTEM_OVERLOAD
+}
+
+# Directives
+
+"""Marks fields that require authentication (future use)"""
+directive @auth on FIELD_DEFINITION
+
+"""Marks fields that are only available in development"""
+directive @dev on FIELD_DEFINITION
+
+"""Marks fields that may be slow or expensive to compute"""
+directive @slow on FIELD_DEFINITION

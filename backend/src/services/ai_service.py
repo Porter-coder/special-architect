@@ -44,25 +44,31 @@ class AIService:
     - Error handling and retry logic
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
         """Initialize AI service with MiniMax configuration."""
-        self.api_key = os.getenv('OPENAI_API_KEY')
+        from ..config import get_config
+
+        if config is None:
+            config = get_config()
+
+        # Use configuration from config.json
+        self.api_key = config.minimax.api_key
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required for AI service. Please configure your MiniMax API key.")
+            raise ValueError("MiniMax API key is required. Please configure minimax.api_key in backend/config.json")
 
-        self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.minimaxi.com/v1')
+        self.base_url = config.minimax.base_url
 
-        # Initialize OpenAI client with MiniMax configuration
+        # Initialize OpenAI client with MiniMax configuration and timeout
         self.client = openai.AsyncOpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
-            extra_body={"reasoning_split": True}
+            timeout=config.generation.timeout  # Use configured timeout
         )
 
-        # Model configuration
-        self.model = "MiniMax-M2.1"  # Primary model for code generation
-        self.max_tokens = 4096
-        self.temperature = 0.7  # Balanced creativity for code generation
+        # Model configuration from config
+        self.model = config.generation.model
+        self.max_tokens = config.generation.max_tokens
+        self.temperature = config.generation.temperature
 
     async def generate_code_stream(
         self,

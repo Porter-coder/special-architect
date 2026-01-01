@@ -12,6 +12,10 @@ from dotenv import load_dotenv
 from .ai_service import AIService
 from .file_service import FileService
 from .code_generation_service import CodeGenerationService
+from .phase_manager import PhaseManager
+from .project_service import ProjectService
+from .documentation_service import DocumentationService
+from .content_processor import ContentProcessor
 
 
 class ServiceContainer:
@@ -20,6 +24,10 @@ class ServiceContainer:
     def __init__(self):
         self._ai_service: Optional[AIService] = None
         self._file_service: Optional[FileService] = None
+        self._phase_manager: Optional[PhaseManager] = None
+        self._project_service: Optional[ProjectService] = None
+        self._documentation_service: Optional[DocumentationService] = None
+        self._content_processor: Optional[ContentProcessor] = None
         self._code_generation_service: Optional[CodeGenerationService] = None
 
     @property
@@ -37,10 +45,44 @@ class ServiceContainer:
         return self._file_service
 
     @property
+    def phase_manager(self) -> PhaseManager:
+        """Get phase manager instance, creating if necessary."""
+        if self._phase_manager is None:
+            self._phase_manager = PhaseManager(self.ai_service)
+        return self._phase_manager
+
+    @property
+    def project_service(self) -> ProjectService:
+        """Get project service instance, creating if necessary."""
+        if self._project_service is None:
+            self._project_service = ProjectService()
+        return self._project_service
+
+    @property
+    def documentation_service(self) -> DocumentationService:
+        """Get documentation service instance, creating if necessary."""
+        if self._documentation_service is None:
+            self._documentation_service = DocumentationService()
+        return self._documentation_service
+
+    @property
+    def content_processor(self) -> ContentProcessor:
+        """Get content processor instance, creating if necessary."""
+        if self._content_processor is None:
+            self._content_processor = ContentProcessor()
+        return self._content_processor
+
+    @property
     def code_generation_service(self) -> CodeGenerationService:
         """Get code generation service instance, creating if necessary."""
         if self._code_generation_service is None:
-            self._code_generation_service = CodeGenerationService(self.ai_service, self.file_service)
+            self._code_generation_service = CodeGenerationService(
+                self.ai_service,
+                self.phase_manager,
+                self.project_service,
+                self.documentation_service,
+                self.content_processor
+            )
         return self._code_generation_service
 
     async def initialize_services(self) -> None:
@@ -51,6 +93,10 @@ class ServiceContainer:
         # Ensure services are created
         _ = self.ai_service
         _ = self.file_service
+        _ = self.phase_manager
+        _ = self.project_service
+        _ = self.documentation_service
+        _ = self.content_processor
 
         # Validate AI service connection (non-blocking in development)
         try:

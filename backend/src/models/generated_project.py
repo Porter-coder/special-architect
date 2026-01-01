@@ -13,27 +13,42 @@ from uuid import UUID
 from pydantic import BaseModel, Field, validator
 
 
+class FileStructure(BaseModel):
+    """File structure representation."""
+    type: str = Field(..., description="Type: 'file' or 'directory'")
+    name: str = Field(..., description="File or directory name")
+    size: Optional[int] = Field(None, description="File size in bytes (files only)")
+    language: Optional[str] = Field(None, description="Programming language (files only)")
+    children: Optional[List['FileStructure']] = Field(None, description="Child files/directories (directories only)")
+
+
 class GeneratedProject(BaseModel):
     """
     Represents the output of a successful code generation.
 
     Fields:
-    - project_id (UUID): Unique identifier for generated project
-    - request_id (UUID): Reference to originating request
+    - id (str): Unique identifier for generated project
+    - request_id (str): Reference to originating request
     - project_name (str): Auto-generated project name (e.g., "snake_game_20251231")
-    - main_file_path (str): Relative path to main executable file (e.g., "main.py")
-    - project_structure (dict): Directory structure with file paths and types
-    - dependencies (list): List of required packages/libraries identified
     - created_at (datetime): Project generation completion timestamp
+    - file_structure (FileStructure): Complete project file tree structure
+    - dependencies (list): List of required packages/libraries identified
+    - total_files (int): Total number of files in project
+    - total_size_bytes (int): Total project size in bytes
+    - syntax_validated (bool): Whether all code files passed AST validation
+    - main_file (str): Path to the main executable file
     """
 
-    project_id: UUID = Field(..., description="Unique identifier for generated project")
-    request_id: UUID = Field(..., description="Reference to originating request")
+    id: str = Field(..., description="Unique identifier for generated project")
+    request_id: str = Field(..., description="Reference to originating request")
     project_name: str = Field(..., description="Auto-generated project name")
-    main_file_path: str = Field(..., description="Relative path to main executable file")
-    project_structure: Dict[str, str] = Field(..., description="Directory structure with file paths and types")
+    created_at: str = Field(..., description="Project generation completion timestamp")
+    file_structure: FileStructure = Field(..., description="Complete project file tree structure")
     dependencies: List[str] = Field(default_factory=list, description="List of required packages/libraries")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Project generation completion timestamp")
+    total_files: int = Field(..., description="Total number of files in project")
+    total_size_bytes: int = Field(..., description="Total project size in bytes")
+    syntax_validated: bool = Field(..., description="Whether all code files passed AST validation")
+    main_file: str = Field(..., description="Path to the main executable file")
 
     class Config:
         """Pydantic configuration."""
@@ -58,8 +73,8 @@ class GeneratedProject(BaseModel):
 
         return v.strip()
 
-    @validator('main_file_path')
-    def validate_main_file_path(cls, v):
+    @validator('main_file')
+    def validate_main_file(cls, v):
         """Validate main file path is safe and points to a valid file."""
         if not v or not v.strip():
             raise ValueError('主文件路径不能为空')
@@ -75,22 +90,12 @@ class GeneratedProject(BaseModel):
 
         return v.strip()
 
-    @validator('project_structure')
-    def validate_project_structure(cls, v):
-        """Validate project structure is a valid dictionary."""
-        if not isinstance(v, dict):
-            raise ValueError('项目结构必须是字典格式')
-
-        # Ensure all values are strings (file types)
-        for path, file_type in v.items():
-            if not isinstance(file_type, str):
-                raise ValueError(f'文件类型必须是字符串，路径: {path}')
-
-            # Validate file types
-            valid_types = ['file', 'directory', 'python', 'javascript', 'typescript', 'java', 'cpp', 'c', 'csharp', 'go', 'rust', 'ruby', 'php', 'text', 'markdown', 'json', 'yaml']
-            if file_type not in valid_types:
-                raise ValueError(f'无效的文件类型: {file_type}，路径: {path}')
-
+    @validator('total_size_bytes')
+    def validate_total_size(cls, v):
+        """Validate total project size doesn't exceed limits."""
+        max_size = 10 * 1024 * 1024  # 10MB
+        if v > max_size:
+            raise ValueError(f'项目总大小不能超过 {max_size} 字节 (10MB)')
         return v
 
     @validator('dependencies')
@@ -109,77 +114,49 @@ class GeneratedProject(BaseModel):
 
         return [dep.strip() for dep in v]
 
-    def add_file(self, file_path: str, file_type: str = 'file'):
-        """
-        Add a file to the project structure.
-
-        Args:
-            file_path: Relative path to the file
-            file_type: Type of file (file, python, javascript, etc.)
-        """
-        self.project_structure[file_path] = file_type
-
-    def add_dependency(self, dependency: str):
-        """
-        Add a dependency to the project.
-
-        Args:
-            dependency: Package/library name
-        """
-        if dependency not in self.dependencies:
-            self.dependencies.append(dependency)
-
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
-        data = self.dict()
-        # Ensure UUIDs are converted to strings
-        if 'project_id' in data and hasattr(data['project_id'], '__str__'):
-            data['project_id'] = str(data['project_id'])
-        if 'request_id' in data and hasattr(data['request_id'], '__str__'):
-            data['request_id'] = str(data['request_id'])
-        # Ensure datetimes are converted to ISO strings
-        if 'created_at' in data and hasattr(data['created_at'], 'isoformat'):
-            data['created_at'] = data['created_at'].isoformat()
-        if 'updated_at' in data and hasattr(data['updated_at'], 'isoformat'):
-            data['updated_at'] = data['updated_at'].isoformat()
-        return data
+        return self.dict()
 
     @classmethod
     def from_dict(cls, data: dict) -> 'GeneratedProject':
         """Create instance from dictionary (for JSON deserialization)."""
-        # Handle UUID string conversion
-        for field in ['project_id', 'request_id']:
-            if field in data and isinstance(data[field], str):
-                data[field] = UUID(data[field])
-
-        # Handle datetime string conversion
-        if 'created_at' in data and isinstance(data['created_at'], str):
-            data['created_at'] = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
-
         return cls(**data)
-
-    def get_files_by_type(self, file_type: str) -> List[str]:
-        """
-        Get all file paths of a specific type.
-
-        Args:
-            file_type: File type to filter by
-
-        Returns:
-            List of file paths
-        """
-        return [path for path, ftype in self.project_structure.items() if ftype == file_type]
 
     def get_python_files(self) -> List[str]:
         """Get all Python files in the project."""
-        return self.get_files_by_type('python')
+        def collect_files(node: FileStructure, path: str = "") -> List[str]:
+            files = []
+            current_path = f"{path}/{node.name}" if path else node.name
 
-    def get_main_file_content(self) -> Optional[str]:
-        """
-        Get the content of the main file (would be read from actual file system).
+            if node.type == "file" and node.language == "python":
+                files.append(current_path)
+            elif node.type == "directory" and node.children:
+                for child in node.children:
+                    files.extend(collect_files(child, current_path))
 
-        Returns:
-            File content if available, None otherwise
-        """
-        # This would be implemented when we have the actual file system access
-        return None
+            return files
+
+        return collect_files(self.file_structure)
+
+    def get_total_files(self) -> int:
+        """Count total files in project structure."""
+        def count_files(node: FileStructure) -> int:
+            if node.type == "file":
+                return 1
+            elif node.type == "directory" and node.children:
+                return sum(count_files(child) for child in node.children)
+            return 0
+
+        return count_files(self.file_structure)
+
+    def get_total_size(self) -> int:
+        """Calculate total size of all files."""
+        def sum_sizes(node: FileStructure) -> int:
+            if node.type == "file" and node.size:
+                return node.size
+            elif node.type == "directory" and node.children:
+                return sum(sum_sizes(child) for child in node.children)
+            return 0
+
+        return sum_sizes(self.file_structure)

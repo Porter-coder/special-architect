@@ -1,0 +1,42 @@
+{
+  "id": "f575f271-fe70-4ae9-83fc-c6c5b8d4d0db",
+  "request_id": "f575f271-fe70-4ae9-83fc-c6c5b8d4d0db",
+  "project_name": "snake_game_20260101_014118",
+  "created_at": "2026-01-01T01:41:18.493775",
+  "file_structure": {
+    "type": "directory",
+    "name": "snake_game_20260101_014118",
+    "size": null,
+    "language": null,
+    "children": [
+      {
+        "type": "file",
+        "name": "main.py",
+        "size": 4480,
+        "language": "python",
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "requirements.txt",
+        "size": 13,
+        "language": null,
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "README.md",
+        "size": 490,
+        "language": null,
+        "children": null
+      }
+    ]
+  },
+  "dependencies": [
+    "pygame"
+  ],
+  "total_files": 3,
+  "total_size_bytes": 4983,
+  "syntax_validated": true,
+  "main_file": "main.py"
+}

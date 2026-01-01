@@ -35,6 +35,18 @@
 - Q: Should intermediate phase outputs be saved as separate documentation files OR only final code saved? → A: Save all phase outputs as separate documentation files
 - Q: When should content cleaning and validation occur - incrementally per phase OR only at completion? → A: Clean only at Phase 3 completion, validate all artifacts
 
+### Session 2025-01-01
+
+- Q: How strict should virtual environment enforcement be for Python code execution? → A: Strict enforcement required (block execution if not in backend\.venv)
+- Q: How should the system handle configuration management? → A: Require backend/config.json (fail fast if missing)
+- Q: What timeout values should be used for network requests? → A: 60 seconds for all requests (180s for E2E verification script)
+- Q: How should the system handle external API failures? → A: Circuit breaker with retry (fail fast during outages, auto-retry)
+- Q: What observability features should be implemented? → A: Structured logging with request metrics (response times, error rates, API usage)
+- Q: How should comprehensive system trace logging be configured across environments? → A: TRACE level always enabled everywhere (maximum debugging, potential performance impact)
+- Q: How should sensitive data be handled in comprehensive logging? → A: Log everything as-is (maximum transparency, potential security risk)
+- Q: How should log file storage and cleanup be managed? → A: Implement log rotation and cleanup (size-based rotation, retention policies)
+- Q: What scope should comprehensive system trace logging cover? → A: Everything including third-party libraries (maximum detail, high overhead)
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -142,6 +154,11 @@ As a developer exploring different programming needs, I want to request various 
 - **FR-022**: System MUST preserve raw AI content in SSE streams to show full generation process including Markdown and explanations
 - **FR-023**: System MUST save intermediate phase outputs as separate documentation files (spec.md for Phase 1, plan.md for Phase 2)
 - **FR-024**: System MUST perform content cleaning and validation only at Phase 3 completion, not during streaming
+- **FR-025**: System MUST enforce virtual environment isolation - any Python code execution MUST verify `sys.prefix` points to `backend\.venv` and immediately exit with "VENV_NOT_ACTIVATED" if not in the correct environment
+- **FR-026**: System MUST read configuration from `backend/config.json` at startup and fail fast with clear error message if file is missing or invalid
+- **FR-027**: System MUST include `timeout=60` parameter in all network requests (httpx, openai, fetch); E2E verification scripts MUST use 180s global execution limit
+- **FR-028**: System MUST implement circuit breaker pattern for external API calls with automatic retry logic to handle temporary failures and prevent cascade failures
+- **FR-029**: System MUST implement comprehensive system trace logging capturing ALL program execution details including function entry/exit, variable state changes, environment loading, dependency injection, file I/O, and API request/response data (with headers and partial chunks) in strict JSONL format to `logs/system_trace.jsonl` with TRACE level always enabled everywhere (including third-party libraries) without data sanitization, implementing log rotation and cleanup policies for post-mortem debugging of environment issues
 
 ### Key Entities *(include if feature involves data)*
 

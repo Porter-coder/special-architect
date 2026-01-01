@@ -1,23 +1,27 @@
-# AI Code Flow Backend Dependencies
+# AI Code Flow MVP - Backend Dependencies
+# Python 3.11 required
 
 # Web Framework
-fastapi==0.109.0
-uvicorn==0.27.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
 
-# AI Service (OpenAI SDK migration)
-openai>=1.0.0
+# HTTP Client for API calls
+httpx==0.25.2
 
-# Environment Management
-python-dotenv==1.0.0
+# AI SDKs
+openai==1.3.5
 
-# Real-time Communication
-sse-starlette==2.0.0
+# Code Generation Dependencies
+pygame==2.5.2
 
-# HTTP Client (compatible with OpenAI SDK)
-httpx>=0.23.0
+# Data Processing
+pydantic==2.5.0
+python-multipart==0.0.6
 
-# File Operations (built-in)
-# pathlib (Python 3.11+ built-in)
+# Logging and Utilities
+python-json-logger==2.0.7
+pathlib2==2.3.7
 
-# Development
-pytest>=7.0.0
+# Development and Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
