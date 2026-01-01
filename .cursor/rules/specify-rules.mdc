@@ -1,0 +1,33 @@
+﻿# speclite_rebuild Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-12-31
+
+## Active Technologies
+- Python 3.11 (locked by Constitution Article I) + OpenAI SDK >=1.0.0, MiniMax API (via OpenAI compatibility), FastAPI (existing) (001-ai-code-flow)
+- File system (local projects/ folder for generated code persistence) (001-ai-code-flow)
+
+- Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API (001-ai-code-flow)
+
+## Project Structure
+
+```text
+backend/
+frontend/
+tests/
+```
+
+## Commands
+
+cd src; pytest; ruff check .
+
+## Code Style
+
+Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked): Follow standard conventions
+
+## Recent Changes
+- 001-ai-code-flow: Added Python 3.11 (locked by Constitution Article I) + OpenAI SDK >=1.0.0, MiniMax API (via OpenAI compatibility), FastAPI (existing)
+
+- 001-ai-code-flow: Added Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

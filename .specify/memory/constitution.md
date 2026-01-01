@@ -1,10 +1,10 @@
 <!-- Sync Impact Report:
-Version change: none → 1.0.0
-Added sections: AI Code Flow constitution with 5 core principles
-Modified principles: All 5 principles added
-Added sections: Runtime environment isolation, language standards, API design, testing requirements, state management
+Version change: 1.0.0 → 1.1.0
+Added sections: Windows compatibility requirements in runtime isolation principle
+Modified principles: Article I enhanced with Windows-specific constraints
+Added sections: Windows PowerShell/CMD script compatibility, cross-platform file operations
 Removed sections: none
-Templates requiring updates: none (constitution principles align with existing templates)
+Templates requiring updates: none (enhancement aligns with existing templates)
 Follow-up TODOs: none
 -->
 
@@ -13,9 +13,32 @@ Follow-up TODOs: none
 ## Core Principles
 
 ### I. 运行时环境锁死与隔离 (Runtime Locking & Isolation)
-**Node.js (Frontend)**: 强制使用 Node.js v20 (LTS)。必须在根目录创建 `.nvmrc` (内容: `v20`) 和 `.node-version` (内容: `20`)。`frontend/package.json` 必须包含 `"engines": { "node": ">=20.0.0 <21.0.0", "npm": ">=10.0.0" }`。严禁使用全局安装的包，所有工具必须安装在项目的 `node_modules` 中，仅通过 `npm run` 或 `npx` 调用。
 
-**Python (Backend)**: 强制使用 Python 3.11 (Stable)。必须在 `backend/` 下创建 `.venv`。严禁直接使用系统 `python` 命令，脚本和开发文档必须明确指示使用虚拟环境解释器路径。所有依赖必须在 `requirements.txt` 中指定明确的版本号，禁止使用 `*` 或宽泛范围。
+1.  **Node.js (Frontend)**:
+
+    -   **版本锁死**: 强制使用 **Node.js v20 (LTS)**。
+
+    -   **Windows 适配**:
+
+        -   所有 npm scripts 必须兼容 Windows PowerShell/CMD。
+
+        -   使用 `cross-env` 设置环境变量，使用 `rimraf` 删除文件，严禁使用 `rm -rf` 或 `export`。
+
+    -   **局部执行**: 严禁全局安装，仅通过 `npm run` 调用局部工具。
+
+2.  **Python (Backend)**:
+
+    -   **版本锁死**: 强制使用 **Python 3.11 (Stable)**。
+
+    -   **Windows 适配**:
+
+        -   虚拟环境激活路径需兼容 Windows: `backend\.venv\Scripts\activate`。
+
+        -   文件路径操作必须使用 `pathlib.Path` 以自动处理分隔符 (`\` vs `/`)。
+
+        -   **编码强制**: 所有文件读写 (`open()`) 必须显式指定 `encoding='utf-8'`，严禁依赖系统默认编码 (GBK)。
+
+    -   **依赖锁死**: `requirements.txt` 版本固定。
 
 ### II. 语言与交互规范 (Language & Interaction)
 **技术层 (Technical)**: 所有源码、变量名、注释必须使用英文。
@@ -43,4 +66,4 @@ All development must adhere to runtime locking and isolation principles. Code re
 
 Constitution supersedes all other practices. All PRs/reviews must verify compliance with runtime locking, language standards, and testing requirements. Complexity must be justified against minimalist principles. Constitution amendments require documentation, approval, and migration plan. Version follows semantic versioning with major changes requiring full compliance review.
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2025-12-31
+**Version**: 1.1.0 | **Ratified**: 2025-12-31 | **Last Amended**: 2025-12-31

@@ -1,0 +1,23 @@
+# AI Code Flow Backend Dependencies
+
+# Web Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+
+# AI Service (OpenAI SDK migration)
+openai>=1.0.0
+
+# Environment Management
+python-dotenv==1.0.0
+
+# Real-time Communication
+sse-starlette==2.0.0
+
+# HTTP Client (compatible with OpenAI SDK)
+httpx>=0.23.0
+
+# File Operations (built-in)
+# pathlib (Python 3.11+ built-in)
+
+# Development
+pytest>=7.0.0

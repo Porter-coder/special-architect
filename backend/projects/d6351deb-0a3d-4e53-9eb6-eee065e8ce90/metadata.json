@@ -1,0 +1,15 @@
+{
+  "project_id": "d6351deb-0a3d-4e53-9eb6-eee065e8ce90",
+  "request_id": "d6351deb-0a3d-4e53-9eb6-eee065e8ce90",
+  "project_name": "project_d6351deb",
+  "main_file_path": "main.py",
+  "project_structure": {
+    "main.py": "python",
+    "requirements.txt": "text",
+    "README.md": "markdown"
+  },
+  "dependencies": [
+    "pygame"
+  ],
+  "created_at": "2025-12-31T23:50:52.165386"
+}
