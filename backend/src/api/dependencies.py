@@ -17,7 +17,7 @@ class CodeGenerationRequest(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "user_input": "帮我写个贪吃蛇游戏"
+                "user_input": "Create a simple calculator in Python"
             }
         }
 

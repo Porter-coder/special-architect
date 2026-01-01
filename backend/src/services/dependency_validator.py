@@ -45,9 +45,18 @@ class DependencyValidator:
         Args:
             mirror_url: PyPI mirror URL (defaults to Tsinghua mirror)
         """
-        self.mirror_url = mirror_url.rstrip('/')
+        # Ensure mirror URL ends with /simple/
+        if not mirror_url.endswith('/simple/'):
+            if mirror_url.endswith('/simple'):
+                mirror_url += '/'
+            elif mirror_url.endswith('/'):
+                mirror_url += 'simple/'
+            else:
+                mirror_url += '/simple/'
+
+        self.mirror_url = mirror_url
         self.client: Optional[httpx.AsyncClient] = None
-        self._semaphore = asyncio.Semaphore(10)  # Limit concurrent requests
+        self._semaphore = asyncio.Semaphore(3)  # Limit concurrent requests to prevent overwhelming
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -106,11 +115,16 @@ class DependencyValidator:
         async with self._semaphore:
             try:
                 normalized_name = self._normalize_package_name(package_name)
-                url = urljoin(self.mirror_url, f"{normalized_name}/")
+                # Ensure proper URL construction: mirror_url + normalized_name + '/'
+                url = f"{self.mirror_url.rstrip('/')}/{normalized_name}/"
 
-                logger.debug(f"Checking package: {package_name} -> {url}")
+                logger.info(f"🔍 Checking package: {package_name} -> {url}")
 
-                response = await self.client.head(url, follow_redirects=True)
+                # Set timeout for individual request
+                timeout = httpx.Timeout(3.0, connect=2.0)
+                response = await self.client.head(url, follow_redirects=True, timeout=timeout)
+
+                logger.info(f"📡 Package {package_name}: HTTP {response.status_code}")
 
                 if response.status_code == 200:
                     logger.debug(f"✅ Package exists: {package_name}")

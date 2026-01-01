@@ -2,7 +2,7 @@
 Code Generation Service
 
 Orchestrates the three-phase code generation process (specify, plan, implement)
-using AI service and file service for Snake game generation.
+using AI service and file service 
 """
 
 import ast
@@ -18,8 +18,6 @@ from .phase_manager import PhaseManager, PhaseManagerError
 from .project_service import ProjectService, ProjectServiceError
 from .documentation_service import DocumentationService
 from .content_processor import ContentProcessor, ContentProcessorError
-from .technology_detector import TechnologyDetector, ApplicationAnalysis
-from .prompt_templates import PromptTemplates
 from .dependency_analyzer import DependencyAnalyzer
 from .compatibility_checker import CompatibilityChecker
 from .dependency_validator import DependencyValidator
@@ -54,8 +52,6 @@ class CodeGenerationService:
         project_service: Optional[ProjectService] = None,
         documentation_service: Optional[DocumentationService] = None,
         content_processor: Optional[ContentProcessor] = None,
-        technology_detector: Optional[TechnologyDetector] = None,
-        prompt_templates: Optional[PromptTemplates] = None,
         dependency_analyzer: Optional[DependencyAnalyzer] = None,
         compatibility_checker: Optional[CompatibilityChecker] = None
     ):
@@ -68,8 +64,6 @@ class CodeGenerationService:
             project_service: Project service instance (created if None)
             documentation_service: Documentation service instance (created if None)
             content_processor: Content processor instance (created if None)
-            technology_detector: Technology detector instance (created if None)
-            prompt_templates: Prompt templates instance (created if None)
             dependency_analyzer: Dependency analyzer instance (created if None)
             compatibility_checker: Compatibility checker instance (created if None)
         """
@@ -78,8 +72,6 @@ class CodeGenerationService:
         self.project_service = project_service or ProjectService()
         self.documentation_service = documentation_service or DocumentationService()
         self.content_processor = content_processor or ContentProcessor()
-        self.technology_detector = technology_detector or TechnologyDetector()
-        self.prompt_templates = prompt_templates or PromptTemplates()
         self.dependency_analyzer = dependency_analyzer or DependencyAnalyzer()
         self.compatibility_checker = compatibility_checker or CompatibilityChecker()
 
@@ -128,26 +120,8 @@ class CodeGenerationService:
             # Update request status to processing
             request.update_status(RequestStatus.PROCESSING)
 
-            # Analyze user request for application type and technologies
-            logger.info(f"Analyzing user request: {request.user_input[:100]}...")
-
-            if request.application_type:
-                logger.info(f"Using provided application type: {request.application_type}")
-                # Analyze with the provided type to get technology recommendations
-                analysis = self.technology_detector.analyze_request(request.user_input)
-                # Override the detected type with the provided one if it's valid
-                try:
-                    from .technology_detector import ApplicationType
-                    provided_type = ApplicationType(request.application_type)
-                    analysis.application_type = provided_type
-                    logger.info(f"Application type set to: {provided_type.value}")
-                except ValueError:
-                    logger.warning(f"Invalid application type provided: {request.application_type}, using detected type")
-            else:
-                analysis = self.technology_detector.analyze_request(request.user_input)
-
-            # Store analysis results for later use
-            request.analysis = analysis  # Add analysis to request object
+            # Use universal prompt system - no complex analysis needed
+            logger.info(f"Processing request with universal prompt: {request.user_input[:100]}...")
 
             phases_data = {}
             all_code_parts = []
@@ -174,18 +148,12 @@ class CodeGenerationService:
                     thinking_parts = []
                     code_parts = []
 
-                    # Get appropriate prompt for this application type and phase
-                    app_type_key = analysis.application_type.value
-                    prompt = self.prompt_templates.get_prompt(
-                        app_type=app_type_key,
+                    # Generate universal prompt for this phase
+                    prompt = self._generate_universal_prompt(
                         phase=phase,
-                        variables={
-                            "user_request": request.user_input,
-                            "spec_content": phases_data.get("specify", {}).get("content", ""),
-                            "plan_content": phases_data.get("plan", {}).get("content", ""),
-                            "technologies": ", ".join([tech.technology.value for tech in analysis.primary_technologies]),
-                            "dependencies": ", ".join(analysis.dependencies)
-                        }
+                        user_request=request.user_input,
+                        spec_content=phases_data.get("specify", {}).get("content", ""),
+                        plan_content=phases_data.get("plan", {}).get("content", "")
                     )
 
                     # Fall back to original user input if no template found
@@ -551,43 +519,8 @@ class CodeGenerationService:
         # Create main.py file
         files["main.py"] = clean_code
 
-        # Create requirements.txt for Snake game
-        files["requirements.txt"] = "pygame>=2.5.0"
-
-        # Create README.md
-        files["README.md"] = """# Snake Game
-
-A simple Snake game implemented in Python using Pygame.
-
-## Requirements
-
-- Python 3.11+
-- Pygame 2.5.0+
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-## Running the Game
-
-```bash
-python main.py
-```
-
-## Controls
-
-- Arrow keys: Move the snake
-- Space: Pause/Unpause (if implemented)
-
-## Game Rules
-
-- Control the snake to eat food and grow
-- Avoid hitting the walls or yourself
-- Score increases with each food eaten
-- Game ends when snake hits wall or itself
-"""
+        # Requirements.txt will be generated by dependency analyzer
+        # Documentation will be generated by documentation service
 
         return files
 
@@ -644,11 +577,8 @@ python main.py
         import re
         from datetime import datetime
 
-        # Extract relevant keywords from user input
-        if "贪吃蛇" in user_input or "snake" in user_input.lower():
-            base_name = "snake_game"
-        else:
-            base_name = "generated_project"
+        # Create generic project name based on request
+        base_name = "generated_project"
 
         # Add timestamp
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -736,6 +666,8 @@ python main.py
                 # Python 3.10+ has sys.stdlib_module_names
                 if hasattr(sys, 'stdlib_module_names'):
                     stdlib_modules = set(sys.stdlib_module_names)
+                    # Add explicit stdlib modules that might not be in sys.stdlib_module_names
+                    stdlib_modules.update({'typing', 'enum'})
                 else:
                     # Fallback: use a comprehensive list for older Python versions
                     stdlib_modules = {
@@ -813,6 +745,99 @@ python main.py
                 declared_packages.add(package_name)
 
         return declared_packages
+
+    def _generate_universal_prompt(self, phase: PhaseName, user_request: str,
+                                  spec_content: str = "", plan_content: str = "") -> str:
+        """
+        Generate a focused prompt for each phase without redundant context.
+
+        Args:
+            phase: Current generation phase
+            user_request: Original user request
+            spec_content: Content from specify phase (if available)
+            plan_content: Content from plan phase (if available)
+
+        Returns:
+            Phase-specific prompt string
+        """
+
+        if phase == PhaseName.SPECIFY:
+            return f"""You are an Expert Python Software Architect.
+
+PHASE 1: REQUIREMENTS ANALYSIS
+=============================
+Analyze the user's requirements comprehensively.
+
+USER REQUEST: {user_request}
+
+Provide a detailed technical specification in Chinese covering:
+1. Core functionality and features
+2. Technical requirements and constraints
+3. Data structures and algorithms needed
+4. User interface and interaction patterns
+5. Error handling and edge cases
+6. Performance considerations"""
+
+        elif phase == PhaseName.PLAN:
+            context = f"\nTECHNICAL SPECIFICATION:\n{spec_content}" if spec_content else ""
+
+            return f"""You are an Expert Python Software Architect.
+
+PHASE 2: TECHNICAL PLANNING
+==========================
+Based on the technical specification, create a detailed implementation plan.
+
+USER REQUEST: {user_request}{context}
+
+Create a comprehensive plan in Chinese including:
+1. Overall architecture and design patterns
+2. Key components and their responsibilities
+3. Data flow and processing logic
+4. Integration points and external dependencies
+5. Testing strategy and quality assurance"""
+
+        elif phase == PhaseName.IMPLEMENT:
+            context_parts = []
+            if spec_content:
+                context_parts.append(f"SPECIFICATION:\n{spec_content[:500]}...")  # Truncate to avoid token overflow
+            if plan_content:
+                context_parts.append(f"PLAN:\n{plan_content[:500]}...")  # Truncate to avoid token overflow
+            context = "\n\n".join(context_parts) if context_parts else ""
+
+            return f"""You are an Expert Python Software Architect.
+
+PHASE 3: CODE IMPLEMENTATION
+===========================
+Execute the implementation plan and generate complete, working code.
+
+USER REQUEST: {user_request}
+
+{context}
+
+CRITICAL CONSTRAINTS:
+- SINGLE-FILE ONLY: Generate EXACTLY ONE file named 'main.py'
+- SELF-CONTAINED: ALL code must be in main.py. NO local imports
+- CONTENT ACCURACY: Generate code that matches the request EXACTLY
+- SYNTAX PERFECTION: Code MUST be syntactically perfect Python using ONLY ASCII characters (no Unicode in strings, comments, or identifiers)
+- STABILITY: Use programmatic data generation, avoid hardcoded datasets
+
+CODE STYLE & COMPLEXITY GUIDE:
+==============================
+- **Target Audience**: Beginner to Intermediate Python developers
+- **Structure**: Use clean, standard structure (Imports -> Constants -> Functions/Classes -> Main Entry)
+- **Complexity**: Avoid complex abstractions. Use straightforward logic that a beginner can follow
+- **Documentation**: Include file header docstring and comments for key logic sections
+- **Completeness**: Code must be runnable 'as is', but keep it minimal and focused
+- **Entry Point**: Include `if __name__ == "__main__":` block for executable scripts
+
+Generate production-ready, well-documented Python code."""
+
+        else:
+            return f"""You are an Expert Python Software Architect.
+
+Process the following request: {user_request}
+
+Provide appropriate content for the {phase.value} phase."""
 
     def _post_process_generated_code(self, generated_files: Dict[str, str]) -> Dict[str, str]:
         """

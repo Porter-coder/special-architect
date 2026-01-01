@@ -42,7 +42,7 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
     Generate code from natural language request with three-phase workflow.
 
     This endpoint implements the core AI Code Flow functionality:
-    1. Accepts natural language requests (e.g., "帮我写个贪吃蛇")
+    1. Accepts natural language requests (e.g., "Create a web app" or "Build a calculator")
     2. Processes through Specify → Plan → Implement phases
     3. Returns streaming progress updates via Server-Sent Events
     4. Generates working, executable code

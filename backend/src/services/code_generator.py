@@ -196,12 +196,7 @@ class CodeGenerator:
         """
         # Simple mapping for common requests
         name_mappings = {
-            "贪吃蛇": "snake_game",
-            "snake": "snake_game",
-            "贪吃蛇游戏": "snake_game",
-            "猜数字": "number_guessing",
-            "计算器": "calculator",
-            "游戏": "game"
+            
         }
 
         base_name = "generated_project"

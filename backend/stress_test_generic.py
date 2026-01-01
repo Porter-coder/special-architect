@@ -180,9 +180,16 @@ class GenericStressTester:
             print("   📝 Request created, starting generation...")
 
             # Run the generation process
+            completed = False
             async for event in self.service.generate_code_stream(request):
                 if event.get("type") == "error":
                     raise CodeGenerationServiceError(event.get("message", "Generation failed"))
+                elif event.get("type") == "complete":
+                    completed = True
+                    break
+
+            if not completed:
+                raise CodeGenerationServiceError("Generation did not complete successfully")
 
             # Wait a moment for file system operations
             await asyncio.sleep(1)
@@ -348,7 +355,7 @@ async def main():
     random.seed(42)
 
     tester = GenericStressTester()
-    await tester.run_stress_test(iterations=1)
+    await tester.run_stress_test(iterations=3)
 
 
 def run_stress_test():

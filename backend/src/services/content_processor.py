@@ -240,7 +240,10 @@ class ContentProcessor:
         }
 
         try:
-            tree = ast.parse(code)
+            # Ensure code is properly encoded as UTF-8
+            if isinstance(code, str):
+                code = code.encode('utf-8').decode('utf-8')
+            tree = ast.parse(code, mode='exec')
 
             for node in ast.walk(tree):
                 # Check for local imports (from module import ...)
