@@ -18,7 +18,16 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 from .api.routes import router
+from .api.health import router as health_router
+from .api.projects import router as projects_router
 from .services.ai_service import AIServiceError
+from .services.code_generation_service import CodeGenerationServiceError
+from .services.project_service import ProjectServiceError
+from .services.file_service import FileServiceError
+from .services.code_parser import CodeParserError
+from .services.content_processor import ContentProcessorError
+from .services.dependency_validator import DependencyValidationError
+from .services.phase_manager import PhaseManagerError
 from .services.container import container
 
 
@@ -72,45 +81,10 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(router, prefix="/api")
+app.include_router(health_router, prefix="/api")
+app.include_router(projects_router, prefix="/api")
 
 
-@app.get("/health")
-async def health_check() -> Dict:
-    """
-    Health check endpoint.
-
-    Returns service health status and basic metrics.
-    """
-    try:
-        # Check AI service connectivity
-        ai_healthy = await container.ai_service.validate_connection()
-
-        # Get basic metrics
-        project_count = len(container.file_service.get_project_list())
-
-        return {
-            "status": "healthy" if ai_healthy else "degraded",
-            "services": {
-                "ai_service": "healthy" if ai_healthy else "unhealthy",
-                "file_service": "healthy"
-            },
-            "metrics": {
-                "total_projects": project_count
-            },
-            "message": "服务运行正常" if ai_healthy else "AI 服务连接异常"
-        }
-
-    except Exception as e:
-        logger.error(f"健康检查失败: {e}")
-        return {
-            "status": "unhealthy",
-            "services": {
-                "ai_service": "unknown",
-                "file_service": "unknown"
-            },
-            "metrics": {},
-            "message": "服务状态检查失败"
-        }
 
 
 @app.exception_handler(AIServiceError)
@@ -127,6 +101,83 @@ async def ai_service_exception_handler(request: Request, exc: AIServiceError) ->
     return JSONResponse(
         status_code=500,
         content={"message": "AI 服务暂时不可用，请稍后重试"}
+    )
+
+
+@app.exception_handler(CodeGenerationServiceError)
+async def code_generation_service_exception_handler(request: Request, exc: CodeGenerationServiceError) -> JSONResponse:
+    """Handle code generation service exceptions with Chinese error messages."""
+    logger.error(f"代码生成服务错误: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"message": f"代码生成失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(ProjectServiceError)
+async def project_service_exception_handler(request: Request, exc: ProjectServiceError) -> JSONResponse:
+    """Handle project service exceptions with Chinese error messages."""
+    logger.error(f"项目服务错误: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"message": f"项目操作失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(FileServiceError)
+async def file_service_exception_handler(request: Request, exc: FileServiceError) -> JSONResponse:
+    """Handle file service exceptions with Chinese error messages."""
+    logger.error(f"文件服务错误: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"message": f"文件操作失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(CodeParserError)
+async def code_parser_exception_handler(request: Request, exc: CodeParserError) -> JSONResponse:
+    """Handle code parser exceptions with Chinese error messages."""
+    logger.error(f"代码解析错误: {exc}")
+
+    return JSONResponse(
+        status_code=400,
+        content={"message": f"代码解析失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(ContentProcessorError)
+async def content_processor_exception_handler(request: Request, exc: ContentProcessorError) -> JSONResponse:
+    """Handle content processor exceptions with Chinese error messages."""
+    logger.error(f"内容处理错误: {exc}")
+
+    return JSONResponse(
+        status_code=400,
+        content={"message": f"内容处理失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(DependencyValidationError)
+async def dependency_validation_exception_handler(request: Request, exc: DependencyValidationError) -> JSONResponse:
+    """Handle dependency validation exceptions with Chinese error messages."""
+    logger.error(f"依赖验证错误: {exc}")
+
+    return JSONResponse(
+        status_code=400,
+        content={"message": f"依赖验证失败: {str(exc)}"}
+    )
+
+
+@app.exception_handler(PhaseManagerError)
+async def phase_manager_exception_handler(request: Request, exc: PhaseManagerError) -> JSONResponse:
+    """Handle phase manager exceptions with Chinese error messages."""
+    logger.error(f"阶段管理错误: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={"message": f"处理阶段错误: {str(exc)}"}
     )
 
 

@@ -7,7 +7,7 @@ Implements the core /generate-code endpoint with Server-Sent Events.
 
 import asyncio
 import logging
-from typing import Dict
+from typing import Dict, List
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
@@ -27,9 +27,16 @@ class GenerateRequest(BaseModel):
     application_type: str = ""  # Optional application type for US3
 
 
-# Global service instances (shared with routes.py for now)
-# TODO: Refactor to use dependency injection
-from .routes import code_generation_service, active_requests, MAX_CONCURRENT_REQUESTS, current_active_requests, request_phases
+# Global service instances
+from ..services.code_generation_service import CodeGenerationService
+from ..services.concurrency_manager import concurrency_manager
+
+# Initialize service
+code_generation_service = CodeGenerationService()
+
+# In-memory storage for active requests (in production, use Redis/database)
+active_requests: Dict[UUID, CodeGenerationRequest] = {}
+request_phases: Dict[UUID, List[ProcessPhase]] = {}
 
 
 router = APIRouter()
@@ -59,6 +66,9 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
     global current_active_requests
 
     try:
+        # Get user identifier (use IP address for simplicity)
+        user_id = "127.0.0.1"  # In production, extract from request headers
+
         # Validate input
         if not request.user_input or not request.user_input.strip():
             raise HTTPException(status_code=400, detail="用户输入不能为空")
@@ -66,27 +76,29 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
         if len(request.user_input) > 1000:
             raise HTTPException(status_code=400, detail="用户输入长度不能超过1000个字符")
 
-        # Check concurrent request limit (constitution requirement: 1-5 users)
-        if current_active_requests >= MAX_CONCURRENT_REQUESTS:
-            raise HTTPException(
-                status_code=429,
-                detail="当前并发请求过多，请稍后重试"
-            )
-
-        # Increment active request counter
-        current_active_requests += 1
-
         # Create new request using our service
         code_request = await code_generation_service.start_generation(
             request.user_input,
             request.application_type
         )
 
+        # Register with concurrency manager
+        try:
+            concurrency_manager.register_request(
+                code_request.request_id,
+                user_id,
+                "/api/generate-code"
+            )
+        except Exception as e:
+            logger.error(f"并发管理器注册失败: {e}")
+            raise HTTPException(status_code=429, detail="当前并发请求过多，请稍后重试")
+
         # Store request
         active_requests[code_request.request_id] = code_request
         request_phases[code_request.request_id] = []
 
-        logger.info(f"代码生成请求已创建: {code_request.request_id} (活跃请求: {current_active_requests}/{MAX_CONCURRENT_REQUESTS})")
+        active_count = concurrency_manager.get_active_requests_count()
+        logger.info(f"代码生成请求已创建: {code_request.request_id} (活跃请求: {active_count})")
 
         # Start background processing
         background_tasks.add_task(process_code_generation, code_request.request_id)
@@ -101,8 +113,12 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
     except HTTPException:
         raise
     except Exception as e:
-        # Decrement counter on failure
-        current_active_requests = max(0, current_active_requests - 1)
+        # Unregister from concurrency manager on failure if request was registered
+        if 'code_request' in locals():
+            try:
+                concurrency_manager.unregister_request(code_request.request_id)
+            except:
+                pass  # Ignore errors during cleanup
         logger.error(f"启动代码生成失败: {e}")
         raise HTTPException(status_code=500, detail="启动代码生成失败，请稍后重试")
 
@@ -262,84 +278,6 @@ async def stream_generation_progress(request_id: UUID):
     return EventSourceResponse(event_generator())
 
 
-@router.get("/projects/{project_id}")
-async def get_project_details(project_id: UUID) -> Dict:
-    """
-    Get generated project details.
-
-    Args:
-        project_id: Project identifier
-
-    Returns:
-        Project metadata and structure
-    """
-    try:
-        project = await code_generation_service.project_service.load_project_metadata(project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
-
-        return {
-            "id": project.id,
-            "project_name": project.project_name,
-            "created_at": project.created_at,
-            "file_structure": project.file_structure.dict(),
-            "dependencies": project.dependencies,
-            "total_files": project.total_files,
-            "total_size_bytes": project.total_size_bytes,
-            "syntax_validated": project.syntax_validated,
-            "main_file": project.main_file
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取项目详情失败: {e}")
-        raise HTTPException(status_code=500, detail="获取项目详情失败")
-
-
-@router.get("/projects/{project_id}/download")
-async def download_project(project_id: UUID):
-    """
-    Download generated project files as ZIP archive.
-
-    Args:
-        project_id: Project identifier
-
-    Returns:
-        ZIP file download response
-    """
-    try:
-        project = await code_generation_service.project_service.load_project_metadata(project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
-
-        if not project.syntax_validated:
-            raise HTTPException(status_code=400, detail="项目尚未通过语法验证，无法下载")
-
-        # Get all project files
-        files = await code_generation_service.project_service.get_project_files(project_id)
-
-        # Create ZIP archive (simplified - in production would create actual ZIP)
-        # For now, return the main file content
-        main_content = files.get(project.main_file, "# Generated code file")
-
-        from fastapi.responses import Response
-
-        return Response(
-            content=main_content,
-            media_type="text/plain",
-            headers={
-                "Content-Disposition": f'attachment; filename="{project.project_name}_{project.main_file}"'
-            }
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"下载项目失败: {e}")
-        raise HTTPException(status_code=500, detail="下载项目失败")
-
-
 async def process_code_generation(request_id: UUID):
     """
     Background task to process code generation through all phases.
@@ -347,8 +285,6 @@ async def process_code_generation(request_id: UUID):
     Args:
         request_id: Unique request identifier
     """
-    global current_active_requests
-
     try:
         logger.info(f"开始处理代码生成请求: {request_id}")
 
@@ -386,6 +322,7 @@ async def process_code_generation(request_id: UUID):
                 active_requests[request_id].update_status(RequestStatus.FAILED, f"系统错误: {str(e)}")
 
     finally:
-        # Always decrement active request counter
-        current_active_requests = max(0, current_active_requests - 1)
-        logger.info(f"请求处理完成: {request_id} (活跃请求: {current_active_requests}/{MAX_CONCURRENT_REQUESTS})")
+        # Always unregister from concurrency manager
+        concurrency_manager.unregister_request(request_id)
+        active_count = concurrency_manager.get_active_requests_count()
+        logger.info(f"请求处理完成: {request_id} (剩余活跃请求: {active_count})")

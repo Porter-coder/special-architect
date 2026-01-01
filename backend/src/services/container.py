@@ -18,6 +18,7 @@ from .documentation_service import DocumentationService
 from .content_processor import ContentProcessor
 from .dependency_analyzer import DependencyAnalyzer
 from .compatibility_checker import CompatibilityChecker
+from .mock_service import MockService
 
 
 class ServiceContainer:
@@ -25,6 +26,7 @@ class ServiceContainer:
 
     def __init__(self):
         self._ai_service: Optional[AIService] = None
+        self._mock_service: Optional[MockService] = None
         self._file_service: Optional[FileService] = None
         self._phase_manager: Optional[PhaseManager] = None
         self._project_service: Optional[ProjectService] = None
@@ -34,12 +36,27 @@ class ServiceContainer:
         self._compatibility_checker: Optional[CompatibilityChecker] = None
         self._code_generation_service: Optional[CodeGenerationService] = None
 
+        # Development mode detection
+        self._development_mode = os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true'
+
     @property
     def ai_service(self) -> AIService:
         """Get AI service instance, creating if necessary."""
-        if self._ai_service is None:
-            self._ai_service = AIService()
-        return self._ai_service
+        if self._development_mode:
+            if self._mock_service is None:
+                self._mock_service = MockService()
+            return self._mock_service
+        else:
+            if self._ai_service is None:
+                self._ai_service = AIService()
+            return self._ai_service
+
+    @property
+    def mock_service(self) -> MockService:
+        """Get mock service instance (for development/testing)."""
+        if self._mock_service is None:
+            self._mock_service = MockService()
+        return self._mock_service
 
     @property
     def file_service(self) -> FileService:
