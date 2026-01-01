@@ -5,10 +5,11 @@ Orchestrates the three-phase code generation process (specify, plan, implement)
 using AI service and file service for Snake game generation.
 """
 
+import ast
 import asyncio
 import logging
 from datetime import datetime
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
+from typing import AsyncGenerator, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from .ai_service import AIService, AIServiceError
@@ -17,6 +18,11 @@ from .phase_manager import PhaseManager, PhaseManagerError
 from .project_service import ProjectService, ProjectServiceError
 from .documentation_service import DocumentationService
 from .content_processor import ContentProcessor, ContentProcessorError
+from .technology_detector import TechnologyDetector, ApplicationAnalysis
+from .prompt_templates import PromptTemplates
+from .dependency_analyzer import DependencyAnalyzer
+from .compatibility_checker import CompatibilityChecker
+from .dependency_validator import DependencyValidator
 from ..models.code_generation_request import CodeGenerationRequest, RequestStatus
 from ..models.generated_project import GeneratedProject
 from ..models.process_phase import PhaseName, ProcessPhase, get_phase_message, PHASE_ORDER
@@ -47,7 +53,11 @@ class CodeGenerationService:
         phase_manager: Optional[PhaseManager] = None,
         project_service: Optional[ProjectService] = None,
         documentation_service: Optional[DocumentationService] = None,
-        content_processor: Optional[ContentProcessor] = None
+        content_processor: Optional[ContentProcessor] = None,
+        technology_detector: Optional[TechnologyDetector] = None,
+        prompt_templates: Optional[PromptTemplates] = None,
+        dependency_analyzer: Optional[DependencyAnalyzer] = None,
+        compatibility_checker: Optional[CompatibilityChecker] = None
     ):
         """
         Initialize code generation service.
@@ -58,19 +68,28 @@ class CodeGenerationService:
             project_service: Project service instance (created if None)
             documentation_service: Documentation service instance (created if None)
             content_processor: Content processor instance (created if None)
+            technology_detector: Technology detector instance (created if None)
+            prompt_templates: Prompt templates instance (created if None)
+            dependency_analyzer: Dependency analyzer instance (created if None)
+            compatibility_checker: Compatibility checker instance (created if None)
         """
         self.ai_service = ai_service or AIService()
         self.phase_manager = phase_manager or PhaseManager(self.ai_service)
         self.project_service = project_service or ProjectService()
         self.documentation_service = documentation_service or DocumentationService()
         self.content_processor = content_processor or ContentProcessor()
+        self.technology_detector = technology_detector or TechnologyDetector()
+        self.prompt_templates = prompt_templates or PromptTemplates()
+        self.dependency_analyzer = dependency_analyzer or DependencyAnalyzer()
+        self.compatibility_checker = compatibility_checker or CompatibilityChecker()
 
-    async def start_generation(self, user_input: str) -> CodeGenerationRequest:
+    async def start_generation(self, user_input: str, application_type: Optional[str] = None) -> CodeGenerationRequest:
         """
         Start a new code generation request.
 
         Args:
             user_input: Natural language request from user
+            application_type: Optional application type for US3
 
         Returns:
             CodeGenerationRequest instance
@@ -80,7 +99,10 @@ class CodeGenerationService:
         """
         try:
             # Create new request
-            request = CodeGenerationRequest(user_input=user_input)
+            request = CodeGenerationRequest(
+                user_input=user_input,
+                application_type=application_type
+            )
             request.update_status(RequestStatus.PENDING)
             return request
         except Exception as e:
@@ -105,6 +127,27 @@ class CodeGenerationService:
         try:
             # Update request status to processing
             request.update_status(RequestStatus.PROCESSING)
+
+            # Analyze user request for application type and technologies
+            logger.info(f"Analyzing user request: {request.user_input[:100]}...")
+
+            if request.application_type:
+                logger.info(f"Using provided application type: {request.application_type}")
+                # Analyze with the provided type to get technology recommendations
+                analysis = self.technology_detector.analyze_request(request.user_input)
+                # Override the detected type with the provided one if it's valid
+                try:
+                    from .technology_detector import ApplicationType
+                    provided_type = ApplicationType(request.application_type)
+                    analysis.application_type = provided_type
+                    logger.info(f"Application type set to: {provided_type.value}")
+                except ValueError:
+                    logger.warning(f"Invalid application type provided: {request.application_type}, using detected type")
+            else:
+                analysis = self.technology_detector.analyze_request(request.user_input)
+
+            # Store analysis results for later use
+            request.analysis = analysis  # Add analysis to request object
 
             phases_data = {}
             all_code_parts = []
@@ -131,7 +174,24 @@ class CodeGenerationService:
                     thinking_parts = []
                     code_parts = []
 
-                    async for chunk in self.ai_service.generate_code_stream(request.user_input, phase):
+                    # Get appropriate prompt for this application type and phase
+                    app_type_key = analysis.application_type.value
+                    prompt = self.prompt_templates.get_prompt(
+                        app_type=app_type_key,
+                        phase=phase,
+                        variables={
+                            "user_request": request.user_input,
+                            "spec_content": phases_data.get("specify", {}).get("content", ""),
+                            "plan_content": phases_data.get("plan", {}).get("content", ""),
+                            "technologies": ", ".join([tech.technology.value for tech in analysis.primary_technologies]),
+                            "dependencies": ", ".join(analysis.dependencies)
+                        }
+                    )
+
+                    # Fall back to original user input if no template found
+                    prompt_text = prompt or request.user_input
+
+                    async for chunk in self.ai_service.generate_code_stream(prompt_text, phase):
                         if chunk["type"] == "thinking":
                             thinking_parts.append(chunk["content"])
                             yield {
@@ -244,8 +304,46 @@ class CodeGenerationService:
                     request.user_input, phases_data, type('TempProject', (), temp_project_data)()
                 )
 
-                # Merge generated code files with documentation
-                all_project_files = {**generated_files, **documentation_files}
+                # Use dependency analyzer for better dependency detection
+                logger.info("Analyzing project dependencies...")
+                # Analyze dependencies from generated files only (before adding docs)
+                temp_files_for_deps = generated_files
+                dependencies, requirements_txt = self.dependency_analyzer.analyze_project_dependencies(temp_files_for_deps)
+
+                # Validate and filter dependencies against PyPI mirror
+                logger.info("Validating dependencies against PyPI mirror...")
+                async with DependencyValidator() as validator:
+                    validation_results = await validator.validate_requirements_async(requirements_txt)
+
+                    if not validation_results["valid"]:
+                        logger.warning(f"Found {validation_results['invalid_packages']} invalid packages, filtering...")
+                        requirements_txt = validation_results["filtered_requirements"]
+                        logger.info("Dependencies filtered and updated")
+
+                # CRITICAL: Post-process and validate single-file constraint
+                generated_files = self._post_process_generated_code(generated_files)
+                single_file_validation = self._validate_single_file_delivery(generated_files, requirements_txt)
+                if not single_file_validation["compliant"]:
+                    error_msg = f"Single-file delivery violation: {single_file_validation['violations']}"
+                    logger.error(error_msg)
+                    raise CodeGenerationServiceError(error_msg)
+
+                # Add validated requirements.txt to project files
+                all_project_files = {**generated_files, **documentation_files, "requirements.txt": requirements_txt}
+
+                # Perform Windows compatibility checking (FR-006)
+                logger.info("Performing Windows compatibility check...")
+                compatibility_warnings = []
+                for file_path, content in all_project_files.items():
+                    if file_path.endswith('.py'):
+                        warnings = self.compatibility_checker.check_compatibility(content, file_path)
+                        compatibility_warnings.extend(warnings)
+
+                # Log compatibility warnings
+                if compatibility_warnings:
+                    logger.warning(f"Found {len(compatibility_warnings)} Windows compatibility warnings")
+                    for warning in compatibility_warnings:
+                        logger.warning(f"  {warning.description} (line {warning.line_number})")
 
                 project_structure = {path: self._get_file_type(path) for path in all_project_files.keys()}
 
@@ -267,7 +365,7 @@ class CodeGenerationService:
                             } for path, content in all_project_files.items()
                         ]
                     },
-                    "dependencies": self._extract_dependencies(generated_files),
+                    "dependencies": [dep.name for dep in dependencies],
                     "total_files": len(all_project_files),
                     "total_size_bytes": sum(len(content) for content in all_project_files.values()),
                     "syntax_validated": True,  # We'll assume it's validated since we generated it
@@ -587,6 +685,208 @@ python main.py
 
         # Ultimate fallback
         return "main.py"
+
+    def _validate_single_file_delivery(self, generated_files: Dict[str, str], requirements_txt: str = "") -> Dict[str, any]:
+        """
+        Validate that generated content adheres to single-file delivery constraint.
+        Uses dynamic detection of standard library and requirements.txt declared packages.
+
+        Args:
+            generated_files: Dictionary of generated file paths to content
+
+        Returns:
+            Validation result with compliance status and violations
+        """
+        result = {
+            "compliant": True,
+            "violations": []
+        }
+
+        # Check that only main.py exists as a Python file
+        python_files = [path for path in generated_files.keys() if path.endswith('.py')]
+
+        if len(python_files) == 0:
+            result["compliant"] = False
+            result["violations"].append("No Python files generated")
+            return result
+
+        if len(python_files) > 1:
+            result["compliant"] = False
+            result["violations"].append(f"Multiple Python files generated: {python_files}")
+            return result
+
+        if python_files[0] != "main.py":
+            result["compliant"] = False
+            result["violations"].append(f"Generated file is not main.py: {python_files[0]}")
+            return result
+
+        # Check that main.py doesn't contain local imports
+        main_content = generated_files["main.py"]
+
+        # Get requirements.txt content to check declared packages
+        declared_packages = self._extract_declared_packages(requirements_txt)
+
+        try:
+            tree = ast.parse(main_content)
+            import sys
+
+            # Use dynamic standard library detection
+            stdlib_modules = set()
+            try:
+                # Python 3.10+ has sys.stdlib_module_names
+                if hasattr(sys, 'stdlib_module_names'):
+                    stdlib_modules = set(sys.stdlib_module_names)
+                else:
+                    # Fallback: use a comprehensive list for older Python versions
+                    stdlib_modules = {
+                        'os', 'sys', 'json', 'datetime', 'math', 'random', 'collections',
+                        'itertools', 'functools', 'pathlib', 'shutil', 'glob', 'zipfile',
+                        'tarfile', 'pickle', 'csv', 're', 'logging', 'threading', 'multiprocessing',
+                        'concurrent', 'asyncio', 'typing', 'enum', 'configparser', 'argparse',
+                        'optparse', 'hashlib', 'secrets', 'ssl', 'socket', 'urllib', 'http',
+                        'ftplib', 'poplib', 'imaplib', 'smtplib', 'uuid', 'sqlite3', 'zlib',
+                        'gzip', 'bz2', 'lzma', 'base64', 'binascii', 'struct', 'weakref',
+                        'gc', 'inspect', 'site', 'warnings', 'contextlib', 'abc', 'atexit',
+                        'traceback', 'future', 'keyword', 'ast', 'token', 'tokenize', 'io',
+                        'codecs', 'unicodedata', 'stringprep', 're', 'difflib', 'textwrap',
+                        'string', 'binary', 'struct', 'weakref', 'copy', 'pprint', 'reprlib',
+                        'enum', 'numbers', 'cmath', 'decimal', 'fractions', 'statistics',
+                        'datetime', 'calendar', 'time', 'zoneinfo', 'locale', 'gettext',
+                        '__future__', 'signal', 'tempfile', 'linecache', 'posixpath', 'ntpath'
+                    }
+            except Exception:
+                # If stdlib detection fails, use fallback
+                stdlib_modules = set()
+
+            # Get allowed modules from dependency analyzer's known packages
+            known_packages = set(self.dependency_analyzer.known_packages.keys())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    if node.module and '.' not in node.module:
+                        # Check if this is a local import (not stdlib and not in requirements.txt)
+                        if (node.module not in stdlib_modules and
+                            node.module not in known_packages and
+                            node.module not in declared_packages):
+                            result["compliant"] = False
+                            result["violations"].append(f"Local import detected: from {node.module} import ...")
+
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        module_name = alias.name.split('.')[0]
+                        # Check if this is a local import
+                        if (module_name not in stdlib_modules and
+                            module_name not in known_packages and
+                            module_name not in declared_packages):
+                            result["compliant"] = False
+                            result["violations"].append(f"Local import detected: import {alias.name}")
+
+        except SyntaxError as e:
+            result["compliant"] = False
+            result["violations"].append(f"Syntax error prevents validation: {e}")
+
+        return result
+
+    def _extract_declared_packages(self, requirements_content: str) -> Set[str]:
+        """
+        Extract package names from requirements.txt content.
+
+        Args:
+            requirements_content: Content of requirements.txt
+
+        Returns:
+            Set of declared package names (normalized to import names where possible)
+        """
+        declared_packages = set()
+
+        for line in requirements_content.split('\n'):
+            line = line.strip()
+            if line and not line.startswith('#'):
+                # Extract package name (handle version specs like package>=1.0.0)
+                package_name = line.split('>=')[0].split('==')[0].split('<')[0].split('>')[0].strip()
+
+                # Normalize common package names back to import names
+                import_name = self.dependency_analyzer.import_patterns.get(package_name, package_name)
+                declared_packages.add(import_name)
+
+                # Also add the package name itself
+                declared_packages.add(package_name)
+
+        return declared_packages
+
+    def _post_process_generated_code(self, generated_files: Dict[str, str]) -> Dict[str, str]:
+        """
+        Post-process generated code to fix common syntax issues.
+
+        Args:
+            generated_files: Dictionary of generated file paths to content
+
+        Returns:
+            Post-processed files dictionary
+        """
+        processed_files = {}
+
+        for file_path, content in generated_files.items():
+            if file_path.endswith('.py'):
+                # Apply syntax fixes
+                processed_content = self._fix_common_syntax_issues(content)
+                processed_files[file_path] = processed_content
+            else:
+                # Keep non-Python files as-is
+                processed_files[file_path] = content
+
+        return processed_files
+
+    def _fix_common_syntax_issues(self, code: str) -> str:
+        """
+        Fix common syntax issues that cause AST parsing failures.
+
+        Args:
+            code: Python code to fix
+
+        Returns:
+            Fixed code
+        """
+        # Fix Chinese punctuation
+        fixes = {
+            '，': ',',  # Chinese comma
+            '。': '.',  # Chinese period
+            '：': ':',  # Chinese colon
+            '；': ';',  # Chinese semicolon
+            '（': '(',  # Chinese left parenthesis
+            '）': ')',  # Chinese right parenthesis
+            '【': '[',  # Chinese left bracket
+            '】': ']',  # Chinese right bracket
+            '《': '<',  # Chinese left angle
+            '》': '>',  # Chinese right angle
+            '「': '"',  # Chinese left quote
+            '」': '"',  # Chinese right quote
+            '『': "'",  # Chinese left single quote
+            '』': "'",  # Chinese right single quote
+        }
+
+        for chinese_char, ascii_char in fixes.items():
+            code = code.replace(chinese_char, ascii_char)
+
+        # Fix common syntax issues more aggressively
+        lines = code.split('\n')
+        fixed_lines = []
+
+        for line in lines:
+            # Check for unterminated strings
+            single_quote_count = line.count("'") - line.count("\\'")
+            double_quote_count = line.count('"') - line.count('\\"')
+
+            # If we have odd counts, the line might have unterminated strings
+            # This is a simple heuristic - real fixing would require more complex parsing
+            if single_quote_count % 2 != 0 or double_quote_count % 2 != 0:
+                logger.warning(f"Detected potential unterminated string in line: {line[:100]}...")
+                # For now, we'll just log the issue and continue
+                # A more sophisticated fix would require proper string parsing
+
+            fixed_lines.append(line)
+
+        return '\n'.join(fixed_lines)
 
     def _get_file_type(self, file_path: str) -> str:
         """

@@ -7,7 +7,7 @@ All data is stored locally with no database requirements, maintaining stateless 
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, validator
@@ -36,6 +36,8 @@ class CodeGenerationRequest(BaseModel):
 
     request_id: UUID = Field(default_factory=uuid4, description="Unique identifier for the request")
     user_input: str = Field(..., min_length=1, max_length=1000, description="Original natural language request from user")
+    application_type: Optional[str] = Field(None, description="Detected or selected application type for US3")
+    analysis: Optional[Any] = Field(None, description="Technology and application analysis results for US3")
     status: RequestStatus = Field(default=RequestStatus.PENDING, description="Current request status")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Request creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last status update timestamp")

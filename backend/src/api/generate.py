@@ -13,6 +13,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
+from pydantic import BaseModel
 
 from ..models.code_generation_request import CodeGenerationRequest, RequestStatus
 from ..models.process_phase import ProcessPhase, PhaseName, get_phase_message, is_valid_phase_transition
@@ -23,6 +24,7 @@ from ..services.code_generation_service import CodeGenerationService, CodeGenera
 class GenerateRequest(BaseModel):
     """Request model for code generation."""
     user_input: str
+    application_type: str = ""  # Optional application type for US3
 
 
 # Global service instances (shared with routes.py for now)
@@ -75,7 +77,10 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
         current_active_requests += 1
 
         # Create new request using our service
-        code_request = await code_generation_service.start_generation(request.user_input)
+        code_request = await code_generation_service.start_generation(
+            request.user_input,
+            request.application_type
+        )
 
         # Store request
         active_requests[code_request.request_id] = code_request

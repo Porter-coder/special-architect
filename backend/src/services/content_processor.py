@@ -115,6 +115,23 @@ class ContentProcessor:
         if not content:
             return ""
 
+        # Fix common syntax issues that cause AST parsing failures
+        # Replace Chinese punctuation with ASCII equivalents
+        content = content.replace('，', ',')  # Chinese comma
+        content = content.replace('。', '.')  # Chinese period
+        content = content.replace('：', ':')  # Chinese colon
+        content = content.replace('；', ';')  # Chinese semicolon
+        content = content.replace('（', '(')  # Chinese left parenthesis
+        content = content.replace('）', ')')  # Chinese right parenthesis
+        content = content.replace('【', '[')  # Chinese left bracket
+        content = content.replace('】', ']')  # Chinese right bracket
+        content = content.replace('《', '<')  # Chinese left angle
+        content = content.replace('》', '>')  # Chinese right angle
+        content = content.replace('「', '"')  # Chinese left quote
+        content = content.replace('」', '"')  # Chinese right quote
+        content = content.replace('『', "'")  # Chinese left single quote
+        content = content.replace('』', "'")  # Chinese right single quote
+
         # Remove excessive whitespace
         content = re.sub(r'\n{3,}', '\n\n', content)
 
@@ -197,6 +214,83 @@ class ContentProcessor:
         all_code = '\n'.join(code_blocks)
         checks["has_main_function"] = 'def main' in all_code or 'if __name__ == "__main__"' in all_code
         checks["has_imports"] = 'import ' in all_code
+
+        # CRITICAL: Single-file validation
+        single_file_checks = self._validate_single_file_constraint(all_code)
+        checks.update(single_file_checks)
+
+        return checks
+
+    def _validate_single_file_constraint(self, code: str) -> Dict[str, any]:
+        """
+        Validate that code adheres to single-file delivery constraint.
+
+        Args:
+            code: Python code to validate
+
+        Returns:
+            Dictionary with single-file validation results
+        """
+        checks = {
+            "single_file_compliant": True,
+            "no_local_imports": True,
+            "local_import_violations": [],
+            "self_contained": True,
+            "containment_issues": []
+        }
+
+        try:
+            tree = ast.parse(code)
+
+            for node in ast.walk(tree):
+                # Check for local imports (from module import ...)
+                if isinstance(node, ast.ImportFrom):
+                    if node.module and '.' not in node.module:
+                        # This is a local import (not a submodule)
+                        if node.module not in ['typing', 'enum', 'config']:  # Allow some built-ins
+                            checks["no_local_imports"] = False
+                            checks["local_import_violations"].append(f"from {node.module} import ...")
+                            checks["single_file_compliant"] = False
+
+                # Check for import statements
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        module_name = alias.name.split('.')[0]  # Get base module
+                        # Check if it's a local module (not in allowed modules)
+                        allowed_modules = {
+                            # Standard library
+                            'os', 'sys', 'json', 'datetime', 'math', 'random', 'collections',
+                            'itertools', 'functools', 'pathlib', 'shutil', 'glob', 'zipfile',
+                            'tarfile', 'pickle', 'csv', 're', 'logging', 'threading', 'multiprocessing',
+                            'concurrent', 'asyncio', 'typing', 'enum', 'configparser', 'argparse',
+                            'optparse', 'hashlib', 'secrets', 'ssl', 'socket', 'urllib', 'http',
+                            'ftplib', 'poplib', 'imaplib', 'smtplib', 'uuid', 'sqlite3', 'zlib',
+                            'gzip', 'bz2', 'lzma', 'base64', 'binascii', 'struct', 'weakref',
+                            'gc', 'inspect', 'site', 'warnings', 'contextlib', 'abc', 'atexit',
+                            'traceback', 'future', 'keyword', 'ast', 'token', 'tokenize', 'io',
+                            'codecs', 'unicodedata', 'stringprep', 're', 'difflib', 'textwrap',
+                            'string', 'binary', 'struct', 'weakref', 'copy', 'pprint', 'reprlib',
+                            'enum', 'numbers', 'cmath', 'decimal', 'fractions', 'statistics',
+                            'datetime', 'calendar', 'time', 'zoneinfo', 'locale', 'gettext',
+                            '__future__', 'signal',
+                            # Common third-party
+                            'fastapi', 'uvicorn', 'flask', 'django', 'numpy', 'pandas', 'matplotlib',
+                            'seaborn', 'requests', 'click', 'rich', 'pygame', 'tkinter', 'PIL',
+                            'opencv', 'cv2', 'sklearn', 'tensorflow', 'torch', 'transformers',
+                            'psutil', 'aiohttp', 'beautifulsoup4', 'bs4', 'lxml', 'selenium'
+                        }
+
+                        if module_name not in allowed_modules and '.' not in alias.name:
+                            # This might be a local import
+                            if len(alias.name.split('.')) == 1:  # Simple import, not submodule
+                                checks["no_local_imports"] = False
+                                checks["local_import_violations"].append(f"import {alias.name}")
+                                checks["single_file_compliant"] = False
+
+        except SyntaxError:
+            # If syntax is invalid, we can't check imports properly
+            checks["self_contained"] = False
+            checks["containment_issues"].append("Syntax error prevents import validation")
 
         return checks
 

@@ -9,9 +9,9 @@
   },
   "generation": {
     "model": "MiniMax-M2.1",
-    "max_tokens": 4000,
+    "max_tokens": 64000,
     "temperature": 0.1,
-    "timeout": 60
+    "timeout": 120
   },
   "system": {
     "max_concurrent_users": 5,

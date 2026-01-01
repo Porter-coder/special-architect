@@ -33,9 +33,9 @@ class OpenAIConfig(BaseModel):
 class GenerationConfig(BaseModel):
     """Code generation configuration."""
     model: str = Field(default="MiniMax-Text-01", description="AI model to use")
-    max_tokens: int = Field(default=4000, ge=100, le=8000, description="Maximum tokens per request")
+    max_tokens: int = Field(default=8000, ge=100, le=256000, description="Maximum tokens per request")
     temperature: float = Field(default=0.1, ge=0.0, le=1.0, description="AI creativity level")
-    timeout: int = Field(default=60, ge=10, le=300, description="Request timeout in seconds")
+    timeout: int = Field(default=120, ge=10, le=600, description="Request timeout in seconds")
 
 
 class SystemConfig(BaseModel):

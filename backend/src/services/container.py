@@ -16,6 +16,10 @@ from .phase_manager import PhaseManager
 from .project_service import ProjectService
 from .documentation_service import DocumentationService
 from .content_processor import ContentProcessor
+from .technology_detector import TechnologyDetector
+from .prompt_templates import PromptTemplates
+from .dependency_analyzer import DependencyAnalyzer
+from .compatibility_checker import CompatibilityChecker
 
 
 class ServiceContainer:
@@ -28,6 +32,10 @@ class ServiceContainer:
         self._project_service: Optional[ProjectService] = None
         self._documentation_service: Optional[DocumentationService] = None
         self._content_processor: Optional[ContentProcessor] = None
+        self._technology_detector: Optional[TechnologyDetector] = None
+        self._prompt_templates: Optional[PromptTemplates] = None
+        self._dependency_analyzer: Optional[DependencyAnalyzer] = None
+        self._compatibility_checker: Optional[CompatibilityChecker] = None
         self._code_generation_service: Optional[CodeGenerationService] = None
 
     @property
@@ -73,6 +81,34 @@ class ServiceContainer:
         return self._content_processor
 
     @property
+    def technology_detector(self) -> TechnologyDetector:
+        """Get technology detector instance, creating if necessary."""
+        if self._technology_detector is None:
+            self._technology_detector = TechnologyDetector()
+        return self._technology_detector
+
+    @property
+    def prompt_templates(self) -> PromptTemplates:
+        """Get prompt templates instance, creating if necessary."""
+        if self._prompt_templates is None:
+            self._prompt_templates = PromptTemplates()
+        return self._prompt_templates
+
+    @property
+    def dependency_analyzer(self) -> DependencyAnalyzer:
+        """Get dependency analyzer instance, creating if necessary."""
+        if self._dependency_analyzer is None:
+            self._dependency_analyzer = DependencyAnalyzer()
+        return self._dependency_analyzer
+
+    @property
+    def compatibility_checker(self) -> CompatibilityChecker:
+        """Get compatibility checker instance, creating if necessary."""
+        if self._compatibility_checker is None:
+            self._compatibility_checker = CompatibilityChecker()
+        return self._compatibility_checker
+
+    @property
     def code_generation_service(self) -> CodeGenerationService:
         """Get code generation service instance, creating if necessary."""
         if self._code_generation_service is None:
@@ -81,7 +117,11 @@ class ServiceContainer:
                 self.phase_manager,
                 self.project_service,
                 self.documentation_service,
-                self.content_processor
+                self.content_processor,
+                self.technology_detector,
+                self.prompt_templates,
+                self.dependency_analyzer,
+                self.compatibility_checker
             )
         return self._code_generation_service
 
@@ -97,6 +137,10 @@ class ServiceContainer:
         _ = self.project_service
         _ = self.documentation_service
         _ = self.content_processor
+        _ = self.technology_detector
+        _ = self.prompt_templates
+        _ = self.dependency_analyzer
+        _ = self.compatibility_checker
 
         # Validate AI service connection (non-blocking in development)
         try:
