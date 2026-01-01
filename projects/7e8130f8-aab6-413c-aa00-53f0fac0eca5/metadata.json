@@ -1,0 +1,61 @@
+{
+  "id": "7e8130f8-aab6-413c-aa00-53f0fac0eca5",
+  "request_id": "7e8130f8-aab6-413c-aa00-53f0fac0eca5",
+  "project_name": "generated_project_20260101_144912",
+  "created_at": "2026-01-01_14-49-12",
+  "file_structure": {
+    "type": "directory",
+    "name": "generated_project_20260101_144912",
+    "size": null,
+    "language": null,
+    "children": [
+      {
+        "type": "file",
+        "name": "main.py",
+        "size": 15557,
+        "language": "python",
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "spec.md",
+        "size": 55195,
+        "language": "markdown",
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "plan.md",
+        "size": 55549,
+        "language": "markdown",
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "README.md",
+        "size": 714,
+        "language": "markdown",
+        "children": null
+      },
+      {
+        "type": "file",
+        "name": "requirements.txt",
+        "size": 152,
+        "language": null,
+        "children": null
+      }
+    ]
+  },
+  "dependencies": [
+    "datetime",
+    "json",
+    "os",
+    "re",
+    "sys",
+    "typing"
+  ],
+  "total_files": 5,
+  "total_size_bytes": 127167,
+  "syntax_validated": true,
+  "main_file": "main.py"
+}

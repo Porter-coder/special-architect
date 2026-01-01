@@ -25,3 +25,6 @@ pathlib2==2.3.7
 # Development and Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
+
+# Process Management (for verification scripts)
+psutil==5.9.0

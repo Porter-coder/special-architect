@@ -20,6 +20,7 @@ import uvicorn
 from .api.routes import router
 from .api.health import router as health_router
 from .api.projects import router as projects_router
+from .api.generate import router as generate_router
 from .services.ai_service import AIServiceError
 from .services.code_generation_service import CodeGenerationServiceError
 from .services.project_service import ProjectServiceError
@@ -83,6 +84,7 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 app.include_router(health_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
+app.include_router(generate_router, prefix="/api")
 
 
 

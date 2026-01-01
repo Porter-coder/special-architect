@@ -97,98 +97,10 @@ async def start_code_generation(request: GenerateRequest, background_tasks: Back
         raise HTTPException(status_code=500, detail="启动代码生成失败，请稍后重试")
 
 
-@router.get("/generate-code/{request_id}/stream")
-async def stream_generation_progress(request_id: UUID):
-    """
-    Stream real-time progress updates for a code generation request.
-
-    Uses Server-Sent Events to provide live updates of the generation process,
-    including phase changes and educational messages.
-    """
-    logger.info(f"开始处理 SSE 请求: {request_id}")
-
-    if request_id not in active_requests:
-        logger.warning(f"请求不存在: {request_id}")
-        raise HTTPException(status_code=404, detail="请求不存在")
-
-    async def event_generator():
-        """Generate SSE events for the request progress."""
-        try:
-            # Send initial connection success event
-            yield {"event": "connected", "data": f"已连接到请求 {request_id}"}
-
-            # Check current request status
-            request = active_requests[request_id]
-
-            # If request is already completed or failed, send final status
-            if request.status == RequestStatus.COMPLETED:
-                project = code_generation_service.file_service.load_project_metadata(request_id)
-                if project:
-                    yield {
-                        "event": "complete",
-                        "data": {
-                            "project_id": str(project.project_id),
-                            "main_file": project.main_file_path,
-                            "project_name": project.project_name
-                        }
-                    }
-                else:
-                    yield {"event": "error", "data": "项目生成失败"}
-                return
-            elif request.status == RequestStatus.FAILED:
-                yield {
-                    "event": "error",
-                    "data": request.error_message or "代码生成失败"
-                }
-                return
-
-            # For active requests, poll for status updates
-            while True:
-                try:
-                    # Check if request is still active
-                    if request_id not in active_requests:
-                        yield {"event": "error", "data": "请求已完成或不存在"}
-                        break
-
-                    request = active_requests[request_id]
-
-                    # Check if generation is complete
-                    if request.status in [RequestStatus.COMPLETED, RequestStatus.FAILED]:
-                        logger.info(f"生成完成 - 请求: {request_id}, 状态: {request.status}")
-                        if request.status == RequestStatus.COMPLETED:
-                            # Load project info
-                            project = code_generation_service.file_service.load_project_metadata(request_id)
-                            if project:
-                                yield {
-                                    "event": "complete",
-                                    "data": {
-                                        "project_id": str(project.project_id),
-                                        "main_file": project.main_file_path,
-                                        "project_name": project.project_name
-                                    }
-                                }
-                            else:
-                                yield {"event": "error", "data": "项目生成失败"}
-                        else:
-                            yield {
-                                "event": "error",
-                                "data": request.error_message or "代码生成失败"
-                            }
-                        break
-
-                    # Wait before next check
-                    await asyncio.sleep(1)
-
-                except Exception as e:
-                    logger.error(f"SSE 循环错误: {e}")
-                    yield {"event": "error", "data": f"流式响应错误: {str(e)}"}
-                    break
-
-        except Exception as e:
-            logger.error(f"SSE 生成器错误: {e}")
-            yield {"event": "error", "data": "流式响应错误"}
-
-    return EventSourceResponse(event_generator())
+# Stream endpoint moved to generate.py for better offline replay support
+# @router.get("/generate-code/{request_id}/stream")
+# async def stream_generation_progress(request_id: UUID):
+#     ... (removed - now handled by generate.py)
 
 
 @router.get("/generate/{request_id}/files")
@@ -211,7 +123,7 @@ async def get_generated_files(request_id: UUID) -> Dict:
             raise HTTPException(status_code=404, detail="请求尚未完成或生成失败")
 
         # Load project metadata
-        project = code_generation_service.file_service.load_project_metadata(request_id)
+        project = await code_generation_service.project_service.load_project_metadata(request_id)
         if not project:
             raise HTTPException(status_code=404, detail="项目文件不存在")
 
@@ -220,7 +132,7 @@ async def get_generated_files(request_id: UUID) -> Dict:
 
         return {
             "project_name": project.project_name,
-            "main_file": project.main_file_path,
+            "main_file": project.main_file,
             "files": [
                 {
                     "path": path,

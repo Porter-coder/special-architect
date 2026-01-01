@@ -146,8 +146,12 @@ class ProjectService:
         """
         try:
             metadata_file = self._get_project_metadata_file(project_id)
+            logger.info(f"Loading project metadata for {project_id}, file: {metadata_file}")
+            logger.info(f"Projects dir: {self.projects_dir}")
+            logger.info(f"Metadata file exists: {metadata_file.exists()}")
 
             if not metadata_file.exists():
+                logger.warning(f"Metadata file does not exist: {metadata_file}")
                 return None
 
             with open(metadata_file, 'r', encoding='utf-8') as f:
