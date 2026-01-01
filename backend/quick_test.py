@@ -2,6 +2,8 @@
 """Quick test of universal prompt system."""
 
 import asyncio
+import signal
+import os
 import sys
 from pathlib import Path
 
@@ -46,7 +48,7 @@ async def quick_test():
                 count += 1
                 content_preview = event.get('content', '')[:30].replace('\n', ' ')
                 print(f"[{elapsed:.1f}s] 📝 TEXT CHUNK {count}: {content_preview}...")
-            elif event_type == 'completion':
+            elif event_type == 'complete':
                 print(f"[{elapsed:.1f}s] ✅ GENERATION COMPLETED with {count} text chunks")
                 return True
             elif event_type == 'error':
@@ -62,6 +64,19 @@ async def quick_test():
     return False
 
 
-if __name__ == "__main__":
-    result = asyncio.run(quick_test())
+async def main():
+    """Main test function with SIGKILL on failure."""
+    result = await quick_test()
+
+    # Temporarily disable SIGKILL to see error details
+    # if not result:
+    #     print("\n❌ TEST FAILED. TERMINATING WITH EXTREME PREJUDICE (SIGKILL)...")
+    #     sys.stdout.flush()
+    #     # Force kill the process
+    #     os.kill(os.getpid(), signal.SIGKILL)
+    # else:
     print(f"Result: {'PASS' if result else 'FAIL'}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

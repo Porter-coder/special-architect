@@ -9,6 +9,8 @@ Tests 30 diverse prompts across 6 categories to ensure system stability and synt
 import asyncio
 import ast
 import random
+import signal
+import os
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
@@ -286,14 +288,17 @@ class GenericStressTester:
             result = await self.run_single_test(i, prompt)
             self.results.append(result)
 
-            # Exit immediately on failure
+            # Exit immediately on failure with SIGKILL
             if not result.success:
                 print(f"\n💥 TEST FAILURE DETECTED - EXITING IMMEDIATELY")
                 print(f"   Failed test: {result.prompt[:50]}...")
                 if result.error_message:
                     print(f"   Error: {result.error_message}")
                 self.generate_summary_report()
-                sys.exit(1)
+                print("\n❌ STRESS TEST FAILED. TERMINATING WITH EXTREME PREJUDICE...")
+                sys.stdout.flush()
+                # Force immediate exit with error code
+                os._exit(1)
 
         # Generate summary report
         self.generate_summary_report()

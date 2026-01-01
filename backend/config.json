@@ -9,7 +9,7 @@
   },
   "generation": {
     "model": "MiniMax-M2.1",
-    "max_tokens": 64000,
+    "max_tokens": 128000,
     "temperature": 0.1,
     "timeout": 120
   },

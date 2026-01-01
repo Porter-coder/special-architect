@@ -70,7 +70,7 @@ class AIService:
 
         # Model configuration from config
         self.model = config.generation.model
-        self.max_tokens = config.generation.max_tokens
+        self.max_tokens = config.generation.max_tokens or 16384  # Default to 16384 if not configured
         self.temperature = config.generation.temperature
 
     async def generate_code_stream(
@@ -96,6 +96,7 @@ class AIService:
         try:
             logger.info(f"🤖 Starting AI stream for phase: {phase}")
             logger.info(f"📝 Prompt length: {len(prompt)} chars")
+            logger.info(f"🎯 Calling AI with max_tokens={self.max_tokens}")
 
             # Create streaming request using OpenAI chat completions API
             stream = await self.client.chat.completions.create(
