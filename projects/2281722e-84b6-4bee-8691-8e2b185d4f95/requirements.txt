@@ -1,0 +1,5 @@
+# No external dependencies required
+# This calculator uses only Python standard library modules:
+# - sys (built-in)
+# - math (built-in)
+# - statistics (built-in)
