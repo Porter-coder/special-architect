@@ -9,7 +9,7 @@
 The AI Code Flow MVP requires research across multiple technical domains to ensure Windows-native compatibility, robust AI integration, and educational process transparency. This research focused on:
 
 1. **AI Engine Integration**: MiniMax API with OpenAI SDK compatibility
-2. **Streaming Architecture**: Real-time educational feedback during code generation
+2. **Streaming Architecture**: Progressive status feedback with educational waiting messages during asynchronous code generation
 3. **Content Processing**: Markdown parsing and AST validation for code extraction
 4. **Windows Environment**: Native compatibility and isolation requirements
 5. **Process Transparency**: Educational workflow visualization
@@ -29,12 +29,14 @@ The AI Code Flow MVP requires research across multiple technical domains to ensu
 - Phase 1 (Specify): Natural language → technical specification conversion
 - Phase 2 (Plan): Specification → code structure design
 - Phase 3 (Implement): Design → executable code generation
-**Educational Value**: Users see rigorous software engineering process unfold in real-time
+**Educational Value**: Users see rigorous software engineering process through progressive status updates and result replay
+
+**Note**: Due to Python asyncio blocking on heavy CPU tasks, a store-and-replay pattern was adopted for stability instead of real-time streaming.
 
 ### Decision: SSE Streaming with Raw Content Preservation
 **Rationale**: FR-022 requires raw AI content preservation for process transparency
 **Implementation**:
-- Server-Sent Events (SSE) for real-time streaming
+- Server-Sent Events (SSE) for progressive status feedback and content replay
 - Preserve Markdown documentation and AI explanations
 - Content cleaning occurs only at Phase 3 completion (FR-024)
 **Benefits**: Rich educational content visible during generation process

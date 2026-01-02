@@ -6,7 +6,7 @@
 
 ## Overview
 
-The AI Code Flow system uses Server-Sent Events (SSE) to provide real-time educational feedback during the three-phase code generation process. This protocol ensures process transparency while maintaining compatibility with existing frontend implementations.
+The AI Code Flow system uses Server-Sent Events (SSE) to provide progressive status feedback and content replay during the three-phase code generation process. This protocol uses a "black box waiting" architecture where AI processing happens asynchronously, with educational waiting messages sent to maintain user engagement.
 
 ## Connection Establishment
 
@@ -60,7 +60,7 @@ interface PhaseUpdateData {
 Streams raw AI-generated content including thinking process and code.
 
 **Frequency**: Multiple times per phase
-**Purpose**: Process transparency and real-time feedback
+**Purpose**: Process transparency through progressive status updates and content replay
 
 **Event Format**:
 ```
@@ -200,13 +200,13 @@ eventSource.addEventListener('error', (event) => {
 ### State Management
 - **Phase Tracking**: Update UI based on phase_update events
 - **Content Accumulation**: Build complete response from content_chunk events
-- **Progress Indication**: Show real-time progress through streaming
+- **Progress Indication**: Show progressive status updates and waiting messages during asynchronous generation
 - **Error Recovery**: Provide retry options for retryable errors
 
 ## Backward Compatibility
 
 ### Existing Frontend Support
-- **Streaming Format**: Maintains identical chunk format to Anthropic SDK
+- **Streaming Format**: Uses store-and-replay pattern for stability with educational waiting messages
 - **Event Types**: Compatible with existing event handling code
 - **Error Types**: Preserves existing error type constants
 
@@ -232,7 +232,7 @@ eventSource.addEventListener('error', (event) => {
 ### Enhanced Content Types
 - **file_creation**: Specific events for file creation notifications
 - **dependency_resolution**: Events for dependency analysis and validation
-- **testing_progress**: Real-time test execution feedback
+- **testing_progress**: Progressive test execution feedback with status updates
 
 ### Advanced Features
 - **Interactive Streaming**: Allow user input during generation process

@@ -37,7 +37,7 @@ paths:
       summary: Generate code from natural language request
       description: |
         Process a natural language code generation request through the three-phase workflow:
-        Specify → Plan → Implement. Returns streaming response with real-time educational feedback.
+        Specify → Plan → Implement. Returns streaming response with progressive status feedback and content replay.
       operationId: generateCode
       requestBody:
         required: true
@@ -147,7 +147,7 @@ components:
       additionalProperties: false
 
     StreamingResponse:
-      description: Server-Sent Events stream for real-time code generation progress
+      description: Server-Sent Events stream for progressive code generation status and content replay
       type: string
       enum:
         - phase_update

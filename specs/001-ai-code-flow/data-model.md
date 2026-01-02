@@ -6,7 +6,7 @@
 
 ## Overview
 
-The AI Code Flow system manages the lifecycle of code generation requests from natural language input to executable code output. The data model supports three-phase processing (Specify → Plan → Implement) with real-time educational feedback and Windows-native compatibility.
+The AI Code Flow system manages the lifecycle of code generation requests from natural language input to executable code output. The data model supports three-phase processing (Specify → Plan → Implement) with progressive status feedback and content replay after asynchronous generation.
 
 ## Core Entities
 
@@ -39,7 +39,7 @@ Represents a user's natural language request for code generation and tracks its 
 
 ### 2. ProcessPhase
 
-Tracks the three-phase educational workflow with real-time status and messaging.
+Tracks the three-phase educational workflow with progressive status updates and educational waiting messages.
 
 **Fields**:
 - `id` (string, UUID): Unique identifier for the phase instance
@@ -179,7 +179,7 @@ CodeGenerationRequest (failed) [permanent]
 - **Validation**: AST parsing of extracted code blocks
 
 ### Frontend-Backend Communication
-- **Real-time Updates**: Server-Sent Events (SSE) for phase progress
+- **Progressive Updates**: Server-Sent Events (SSE) for status feedback and content replay
 - **State Synchronization**: Frontend manages business state, backend processes requests
 - **Error Propagation**: Chinese error messages with retry capabilities
 

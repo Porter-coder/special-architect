@@ -21,7 +21,7 @@ type Query {
 type Mutation {
   """
   Generate code from natural language request
-  Returns streaming response with real-time progress updates
+  Returns streaming response with progressive status updates and content replay
   """
   generateCode(input: CodeGenerationInput!): CodeGenerationPayload!
 }

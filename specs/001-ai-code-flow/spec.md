@@ -47,6 +47,19 @@
 - Q: How should log file storage and cleanup be managed? → A: Implement log rotation and cleanup (size-based rotation, retention policies)
 - Q: What scope should comprehensive system trace logging cover? → A: Everything including third-party libraries (maximum detail, high overhead)
 
+### Session 2026-01-02 (Architecture Alignment)
+
+- Q: How should FR-002 be updated to reflect the actual "black box waiting" architecture instead of "real-time streaming"? → A: Change to "Progressive Status Feedback & Result Replay" - system provides educational waiting messages during generation and replays content upon completion
+- Q: How should FR-022 be clarified to reflect actual SSE usage for status updates and content replay? → A: SSE provides status updates during wait time and content replay after completion, not live AI reasoning
+- Q: How should FR-029 address the security implications of comprehensive logging? → A: Add note that trace logging includes raw inputs for debugging; in production, logs should be rotated and access restricted
+- Q: How are FR-006 (Windows compatibility) and FR-008 (zero startup errors) covered by existing implementation? → A: FR-006 covered by T043 (Windows validation); FR-008 covered by T010 (venv check) and T045 (health check)
+- Q: How is FR-005 (downloadable files) covered by existing implementation? → A: Covered by T047 (download API endpoint)
+
+### Session 2026-01-02 (Documentation Consistency Sweep)
+
+- Q: Should all artifacts be updated to consistently describe the "black box waiting" architecture instead of "real-time streaming"? → A: Yes - updated research.md, data-model.md, contracts/, and quickstart.md to use "progressive status feedback" terminology
+- Q: Should implicit FR coverage be explicitly documented in tasks.md? → A: Yes - added coverage comments linking T023 (FR-003,004,013,016,019), T028 (FR-012), T029 (FR-001), T010 (FR-007)
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -81,7 +94,7 @@ As a user who wants to learn programming through AI assistance, I want to reques
 
 ### User Story 2 - Process Transparency Education (Priority: P1)
 
-As a user curious about how AI programming works, I want to see real-time feedback during each phase of the development process, so that I understand that AI programming is not magic but follows rigorous software engineering principles.
+As a user curious about how AI programming works, I want to see progressive feedback during each phase of the development process, so that I understand that AI programming is not magic but follows rigorous software engineering principles.
 
 **Why this priority**: This addresses the core philosophy of "process transparency" - users need to see the Specify -> Plan -> Implement workflow to break the "AI magic" misconception.
 
@@ -131,7 +144,7 @@ As a developer exploring different programming needs, I want to request various 
 ### Functional Requirements
 
 - **FR-001**: System MUST accept natural language requests for code generation through a web interface
-- **FR-002**: System MUST display real-time educational feedback showing the Specify-Plan-Implement process phases
+- **FR-002**: System MUST display progressive status feedback showing the Specify-Plan-Implement process phases with educational waiting messages during generation and result replay upon completion
 - **FR-003**: System MUST generate working, executable code based on user requests without hardcoded responses
 - **FR-004**: System MUST use MiniMax AI engine for all code generation operations
 - **FR-005**: System MUST provide downloadable code files as the final output
@@ -151,14 +164,14 @@ As a developer exploring different programming needs, I want to request various 
 - **FR-019**: System MUST use extra_body={"reasoning_split": True} to ensure <think> tags never appear in delta.content
 - **FR-020**: System MUST implement robust Markdown code block parsing to extract clean Python code from AI responses
 - **FR-021**: System MUST validate all extracted code using ast.parse() to ensure syntactic correctness before saving files
-- **FR-022**: System MUST preserve raw AI content in SSE streams to show full generation process including Markdown and explanations
+- **FR-022**: System MUST use SSE streams for status updates during generation wait time and content replay after completion
 - **FR-023**: System MUST save intermediate phase outputs as separate documentation files (spec.md for Phase 1, plan.md for Phase 2)
 - **FR-024**: System MUST perform content cleaning and validation only at Phase 3 completion, not during streaming
 - **FR-025**: System MUST enforce virtual environment isolation - any Python code execution MUST verify `sys.prefix` points to `backend\.venv` and immediately exit with "VENV_NOT_ACTIVATED" if not in the correct environment
 - **FR-026**: System MUST read configuration from `backend/config.json` at startup and fail fast with clear error message if file is missing or invalid
 - **FR-027**: System MUST include `timeout=60` parameter in all network requests (httpx, openai, fetch); E2E verification scripts MUST use 180s global execution limit
 - **FR-028**: System MUST implement circuit breaker pattern for external API calls with automatic retry logic to handle temporary failures and prevent cascade failures
-- **FR-029**: System MUST implement comprehensive system trace logging capturing ALL program execution details including function entry/exit, variable state changes, environment loading, dependency injection, file I/O, and API request/response data (with headers and partial chunks) in strict JSONL format to `logs/system_trace.jsonl` with TRACE level always enabled everywhere (including third-party libraries) without data sanitization, implementing log rotation and cleanup policies for post-mortem debugging of environment issues
+- **FR-029**: System MUST implement comprehensive system trace logging capturing ALL program execution details including function entry/exit, variable state changes, environment loading, dependency injection, file I/O, and API request/response data (with headers and partial chunks) in strict JSONL format to `logs/system_trace.jsonl` with TRACE level always enabled everywhere (including third-party libraries) without data sanitization, implementing log rotation and cleanup policies for post-mortem debugging of environment issues. **Security Note**: Trace logging includes raw inputs for debugging. In production, logs should be rotated and access restricted.
 
 ### Key Entities *(include if feature involves data)*
 

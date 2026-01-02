@@ -5,26 +5,26 @@
 [![Node.js](https://img.shields.io/badge/node.js-20-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-AI Code Flow is an innovative AI-powered code generation system that transforms natural language requests into working, executable code through a transparent three-phase educational process. Built with process transparency and educational value in mind.
+AI Code Flow is an AI-powered code generation system that transforms natural language requests into working, executable code through a structured three-phase process. The system uses a "black box waiting" architecture where AI processing happens asynchronously, with educational progress feedback during the wait.
 
 ## 🌟 Key Features
 
 ### 🎯 Core Functionality
 - **Natural Language Processing**: Convert plain Chinese/English requests into working code
-- **Three-Phase Workflow**: Educational Specify → Plan → Implement process
-- **Real-time Streaming**: Server-Sent Events for live progress updates
-- **Process Transparency**: Users see AI reasoning and decision-making in real-time
+- **Three-Phase Workflow**: Structured Specify → Plan → Implement process with educational feedback
+- **Streaming Progress**: Server-Sent Events provide progress updates and thinking messages during AI processing
+- **Black Box Architecture**: AI processing happens asynchronously with educational waiting feedback
 
 ### 🔧 Technical Excellence
-- **SDK Migration**: Seamless OpenAI ↔ MiniMax SDK compatibility
+- **SDK Migration**: Seamless OpenAI ↔ MiniMax SDK compatibility with automatic fallback
 - **Windows Native**: Full Windows compatibility with environment isolation
 - **AST Validation**: Automatic syntax validation for all generated code
 - **Concurrent Users**: Support for 1-5 concurrent users with proper management
 
 ### 🎓 Educational Value
-- **Phase Education**: Clear explanations of development phases in Chinese
-- **Raw AI Content**: Access to unfiltered AI reasoning and documentation
-- **Process Learning**: Understand how AI approaches software development
+- **Phase Education**: Clear explanations of development phases in Chinese during processing
+- **Waiting Experience**: Educational messages and progress indicators while AI processes in background
+- **Code Replay**: Generated code displayed with typing effect for visual feedback
 
 ## 🚀 Quick Start
 
@@ -202,11 +202,12 @@ for line in response.iter_lines():
 
 ### Key Design Principles
 
-1. **Educational Transparency**: Users learn development processes
-2. **SDK Compatibility**: Seamless OpenAI/MiniMax switching
-3. **Windows Native**: Full Windows environment support
-4. **Concurrent Safety**: Proper multi-user management
-5. **Error Resilience**: Comprehensive Chinese error messages
+1. **Black Box Processing**: AI generation happens asynchronously in background tasks
+2. **Educational Waiting**: Progress messages and thinking indicators during processing wait
+3. **SDK Compatibility**: Seamless OpenAI/MiniMax switching with automatic fallback
+4. **Windows Native**: Full Windows environment support with virtual environment isolation
+5. **Concurrent Safety**: Proper multi-user management with request queuing
+6. **Error Resilience**: Comprehensive Chinese error messages and graceful failure handling
 
 ## 🧪 Testing
 

@@ -41,7 +41,7 @@
 
 - [X] T008 Create backend/src/main.py with FastAPI application setup
 - [X] T009 Create backend/config.json with MiniMax/OpenAI SDK configuration
-- [X] T010 Implement virtual environment validation in backend/src/main.py (FR-025)
+- [X] T010 Implement virtual environment validation in backend/src/main.py (FR-025, covers FR-007)
 - [X] T011 Implement configuration loading and validation in backend/src/config.py (FR-026)
 - [X] T012 Implement comprehensive TRACE logging system in backend/src/logging_config.py (FR-029)
 - [X] T013 Create backend/src/api/ directory structure for API endpoints
@@ -72,13 +72,13 @@
 - [X] T020 [US1] Implement CodeGenerationRequest model in backend/src/models/code_generation_request.py
 - [X] T021 [US1] Implement ProcessPhase model in backend/src/models/process_phase.py
 - [X] T022 [US1] Implement GeneratedProject model in backend/src/models/generated_project.py
-- [X] T023 [US1] Create AI service with MiniMax SDK integration in backend/src/services/ai_service.py
+- [X] T023 [US1] Create AI service with MiniMax SDK integration in backend/src/services/ai_service.py (covers FR-003, FR-004, FR-013, FR-016, FR-019)
 - [X] T024 [US1] Implement code generation service in backend/src/services/code_generation_service.py
 - [X] T025 [US1] Implement Markdown parsing and AST validation in backend/src/services/code_parser.py (FR-020, FR-021)
 - [X] T026 [US1] Create POST /generate-code endpoint with SSE streaming in backend/src/api/generate.py (FR-015, FR-022)
 - [X] T027 [US1] Implement three-phase educational workflow (Specify → Plan → Implement) in backend/src/services/phase_manager.py
-- [X] T028 [US1] Add project file management and storage in backend/src/services/project_service.py
-- [X] T029 [US1] Create basic frontend interface with input form in frontend/src/components/CodeGenerator.tsx
+- [X] T028 [US1] Add project file management and storage in backend/src/services/project_service.py (covers FR-012)
+- [X] T029 [US1] Create basic frontend interface with input form in frontend/src/components/CodeGenerator.tsx (covers FR-001)
 - [X] T030 [US1] Implement SSE streaming display in frontend with phase messages in frontend/src/components/StreamingDisplay.tsx
 - [X] T031 [US1] Add download functionality for generated projects in frontend/src/components/ProjectDownloader.tsx
 
@@ -88,7 +88,7 @@
 
 ## Phase 4: User Story 2 - Process Transparency Education (Priority: P1)
 
-**Goal**: Show real-time educational feedback during all phases with raw AI content including Markdown explanations
+**Goal**: Show progressive educational feedback during all phases with raw AI content including Markdown explanations
 
 **Independent Test**: Submit any code generation request and observe raw AI output in SSE stream with educational messages for each phase
 
@@ -129,18 +129,18 @@
 
 **Purpose**: Improvements that affect multiple user stories and final system hardening
 
-- [ ] T045 [P] Implement GET /health endpoint in backend/src/api/health.py
-- [ ] T046 [P] Implement GET /projects/{id} endpoint in backend/src/api/projects.py
-- [ ] T047 [P] Implement GET /projects/{id}/download endpoint in backend/src/api/projects.py
-- [ ] T048 [P] Add comprehensive error handling with Chinese messages throughout backend (FR-014)
-- [ ] T049 [P] Implement development mode with mock responses in backend/src/services/mock_service.py (FR-018)
-- [ ] T050 [P] Add concurrent user management (1-5 users) in backend/src/services/concurrency_manager.py (FR-009, FR-010)
-- [ ] T051 [P] Implement retry logic for failed requests in frontend/src/services/retry_service.ts (FR-011)
-- [ ] T052 [P] Add log rotation and cleanup policies in backend/src/logging_config.py (FR-029)
-- [ ] T053 [P] Create comprehensive integration tests for SDK migration verification in backend/tests/test_integration.py
-- [ ] T054 [P] Add Playwright E2E tests for complete user workflows in tests/test_e2e.py
-- [ ] T055 [P] Implement final validation per quickstart.md checklist in tests/test_validation.py
-- [ ] T056 [P] Documentation updates and README completion in docs/
+- [X] T045 [P] Implement GET /health endpoint in backend/src/api/health.py
+- [X] T046 [P] Implement GET /projects/{id} endpoint in backend/src/api/projects.py
+- [X] T047 [P] Implement GET /projects/{id}/download endpoint in backend/src/api/projects.py
+- [X] T048 [P] Add comprehensive error handling with Chinese messages throughout backend (FR-014)
+- [X] T049 [P] Implement development mode with mock responses in backend/src/services/mock_service.py (FR-018)
+- [X] T050 [P] Add concurrent user management (1-5 users) in backend/src/services/concurrency_manager.py (FR-009, FR-010)
+- [X] T051 [P] Implement retry logic for failed requests in frontend/src/services/retry_service.ts (FR-011)
+- [X] T052 [P] Add log rotation and cleanup policies in backend/src/logging_config.py (FR-029)
+- [X] T053 [P] Create comprehensive integration tests for SDK migration verification in backend/tests/test_integration.py
+- [X] T054 [P] Add Playwright E2E tests for complete user workflows in tests/test_e2e.py
+- [X] T055 [P] Implement final validation per quickstart.md checklist in tests/test_validation.py
+- [X] T056 [P] Documentation updates and README completion in docs/
 
 ---
 

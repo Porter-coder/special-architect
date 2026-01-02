@@ -69,7 +69,10 @@ Content-Type: application/json
 
 ### Streaming Events
 
-The generation process provides real-time updates via Server-Sent Events.
+The system uses Server-Sent Events with a "black box waiting" approach:
+
+**Phase 1 - Waiting**: Educational messages sent every second while AI processes in background
+**Phase 2 - Replay**: Generated content replayed with typing effect once processing completes
 
 **Connection Event:**
 ```json
@@ -79,39 +82,40 @@ The generation process provides real-time updates via Server-Sent Events.
 }
 ```
 
-**Phase Update Events:**
+**Waiting Phase - Thinking Messages:**
+```json
+{
+  "event": "ai_thinking",
+  "data": {
+    "phase": "waiting",
+    "content": "正在分析用户需求...",
+    "timestamp": "2026-01-01T12:00:00Z",
+    "raw_type": "waiting_message"
+  }
+}
+```
+
+**Completion Phase - Content Replay:**
 ```json
 {
   "event": "phase_update",
   "data": {
-    "phase": "specify",
-    "message": "正在分析用户需求并制定规范...",
+    "phase": "implement",
+    "message": "正在生成代码...",
     "status": "active"
   }
 }
 ```
 
-**Content Chunk Events:**
+**Character-by-Character Code Streaming:**
 ```json
 {
-  "event": "content_chunk",
+  "event": "ai_content",
   "data": {
-    "type": "markdown",
-    "content": "# 项目规范\\n\\n游戏需要蛇、食物、移动控制...",
-    "phase": "specify"
-  }
-}
-```
-
-**AI Thinking Events (Raw Content):**
-```json
-{
-  "event": "ai_thinking",
-  "data": {
-    "phase": "plan",
-    "content": "分析用户需求：贪吃蛇游戏需要...",
+    "phase": "implement",
+    "content": "i",
     "timestamp": "2026-01-01T12:00:00Z",
-    "raw_type": "thinking_trace"
+    "raw_type": "generated_text"
   }
 }
 ```
@@ -155,7 +159,12 @@ The generation process provides real-time updates via Server-Sent Events.
 
 ## GET /generate-code/{request_id}/stream
 
-Stream real-time progress for an active code generation request.
+Stream progress updates and educational messages during code generation wait.
+
+**Current Implementation**: Uses "black box waiting" architecture where:
+1. AI processing happens asynchronously in background
+2. Streaming endpoint sends educational "thinking" messages every second while waiting
+3. Once generation completes, replays content with typing effect
 
 ### Request
 
@@ -172,7 +181,7 @@ Accept: text/event-stream
 
 ### Response
 
-Server-Sent Events stream with progress updates (see above).
+Server-Sent Events stream with waiting progress and completion replay (see below).
 
 ---
 

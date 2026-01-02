@@ -251,7 +251,7 @@ Generate code from natural language input.
 }
 ```
 
-**Response**: Server-Sent Events stream with real-time progress.
+**Response**: Server-Sent Events stream with progressive status updates and content replay.
 
 #### GET /health
 System health check.
@@ -275,7 +275,7 @@ Download generated project files.
 
 ### Streaming Events
 
-The system uses Server-Sent Events for real-time feedback:
+The system uses Server-Sent Events for progressive status feedback and content replay:
 
 - `phase_update`: Phase transitions with educational messages
 - `content_chunk`: Raw AI output (thinking, code, documentation)
@@ -364,7 +364,7 @@ Copy-Item backend/config.json "config_backup_$(Get-Date -Format 'yyyyMMdd').json
 
 ### Educational Features
 
-- **Process Transparency**: Users see AI reasoning in real-time
+- **Process Transparency**: Users see progressive status updates and educational waiting messages
 - **Phase Messages**: Chinese educational feedback for each step
 - **Raw Content**: Preserves AI explanations and documentation
 - **Retry Capability**: Failed requests can be retried with clear errors

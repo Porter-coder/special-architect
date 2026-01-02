@@ -12,13 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 AI Code Flow 1.0.0 is the first production-ready release with full Windows compatibility and enterprise-grade reliability.
 
 #### Added
-- **Three-Phase Educational Workflow**: Complete Specify → Plan → Implement process with real-time streaming
+- **Three-Phase Educational Workflow**: Complete Specify → Plan → Implement process with progress streaming
 - **Windows Native Compatibility**: Full Windows environment support with virtual environment isolation
 - **SDK Migration Infrastructure**: Seamless OpenAI ↔ MiniMax SDK compatibility with automatic fallback
 - **Concurrent User Management**: Support for 1-5 concurrent users with proper resource management
 - **Comprehensive Error Handling**: Chinese error messages throughout the application
 - **AST Validation**: Automatic syntax validation for all generated Python code
-- **Real-time Streaming**: Server-Sent Events for live progress updates and AI reasoning transparency
+- **Progress Streaming**: Server-Sent Events with educational waiting messages and content replay
 - **Project Management**: File-based project storage with download capabilities
 - **Mock Service**: Development mode with mock responses for testing without API keys
 - **Log Rotation**: Automatic log rotation (100MB files) with 30-day retention
@@ -32,7 +32,7 @@ AI Code Flow 1.0.0 is the first production-ready release with full Windows compa
 - **Frontend**: Next.js with TypeScript and React components
 - **AI Integration**: MiniMax primary, OpenAI fallback support
 - **Code Generation**: Python-focused with Pygame support for games
-- **Streaming**: SSE-based real-time communication
+- **Streaming**: SSE-based progress communication with educational waiting messages
 - **Storage**: File system-based project storage
 - **Logging**: TRACE-level JSONL logging with rotation
 - **Testing**: pytest backend, Playwright frontend E2E
