@@ -1,9 +1,0 @@
-# AI Code Flow Generated Requirements
-# Auto-generated dependency list
-
-click>=8.1.0
-pytest>=7.4.0
-
-# Testing dependencies
-pytest>=7.4.0
-pytest-asyncio>=0.21.0

@@ -1,0 +1,148 @@
+openapi: 3.0.3
+info:
+  title: File Librarian API
+  version: 1.0.0
+  description: Read-only file serving service for generated projects
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /api/projects/{project_id}:
+    get:
+      summary: Get project directory structure
+      description: Returns the complete directory tree for a generated project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID from generation
+      responses:
+        '200':
+          description: Project directory structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryTree'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Filesystem error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/projects/{project_id}/files/{file_path}:
+    get:
+      summary: Get file content
+      description: Returns the content of a specific file in the project
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID
+        - name: file_path
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Relative file path from project root (URL encoded)
+          example: "src%2Fmain.py"
+      responses:
+        '200':
+          description: File content
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Raw file content
+            application/json:
+              schema:
+                type: string
+                description: Raw file content
+        '404':
+          description: File or project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    DirectoryTree:
+      type: object
+      required:
+        - project_id
+        - root
+        - total_files
+        - generated_at
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          description: Project identifier
+        root:
+          $ref: '#/components/schemas/FileSystemNode'
+        total_files:
+          type: integer
+          minimum: 0
+          description: Total number of files in project
+        generated_at:
+          type: string
+          format: date-time
+          description: When the directory tree was generated
+
+    FileSystemNode:
+      type: object
+      required:
+        - type
+        - name
+        - path
+      properties:
+        type:
+          type: string
+          enum: [file, directory]
+          description: Node type
+        name:
+          type: string
+          description: File or directory name
+          example: "main.py"
+        path:
+          type: string
+          description: Relative path from project root
+          example: "src/main.py"
+        size_bytes:
+          type: integer
+          minimum: 0
+          description: File size in bytes (files only)
+        created_at:
+          type: string
+          format: date-time
+          description: File creation timestamp
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileSystemNode'
+          description: Child nodes (directories only)
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Human-readable error message in Chinese
+          example: "项目文件不存在"

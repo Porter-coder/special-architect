@@ -1,8 +1,0 @@
-# AI Code Flow Generated Requirements
-# Auto-generated dependency list
-
-
-# WARNING: Missing local files detected
-# Missing: io.py
-# Missing: config_manager.py
-# Missing: message_handler.py

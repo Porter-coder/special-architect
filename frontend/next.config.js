@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  // Allow API routes to access file system
+  serverRuntimeConfig: {
+    PROJECTS_ROOT: process.env.PROJECTS_ROOT || '../projects',
   },
-  typescript: {
-    ignoreBuildErrors: true,
+  // Disable static optimization for API routes
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
   },
 }
 

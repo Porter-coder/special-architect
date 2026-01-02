@@ -1,0 +1,176 @@
+openapi: 3.0.3
+info:
+  title: Code Generation Factory API
+  version: 1.0.0
+  description: Write-only project generation service with SSE streaming
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/generate:
+    post:
+      summary: Start project generation
+      description: Initiates code generation and returns project UUID. Generation runs asynchronously.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  description: Natural language description of the project to generate
+                  example: "Create a Python snake game with pygame"
+                template:
+                  type: string
+                  description: Optional template identifier
+                  example: "python-cli"
+      responses:
+        '200':
+          description: Generation started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - project_id
+                  - status
+                properties:
+                  project_id:
+                    type: string
+                    format: uuid
+                    description: Unique identifier for the generated project
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                  status:
+                    type: string
+                    enum: [generating]
+                    description: Current generation status
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stream/{project_id}:
+    get:
+      summary: SSE stream for real-time generation updates
+      description: Server-sent events stream providing live updates during project generation
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project UUID from generation request
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-sent events with the following format:
+
+                  event: file_written
+                  data: {"filename": "main.py", "path": "main.py", "type": "file", "status": "created"}
+
+                  event: generation_complete
+                  data: {"project_id": "uuid", "status": "completed", "total_files": 15}
+
+                  event: generation_error
+                  data: {"project_id": "uuid", "status": "failed", "error": "error message"}
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Human-readable error message in Chinese
+          example: "项目生成失败，请检查输入参数"
+
+    FileWrittenEvent:
+      type: object
+      required:
+        - filename
+        - path
+        - type
+        - status
+      properties:
+        filename:
+          type: string
+          description: Just the filename without path
+          example: "main.py"
+        path:
+          type: string
+          description: Full relative path from project root
+          example: "src/main.py"
+        type:
+          type: string
+          enum: [file, directory]
+          description: Type of filesystem item
+        status:
+          type: string
+          enum: [created]
+          description: Creation status
+        size_bytes:
+          type: integer
+          description: File size in bytes (files only)
+          minimum: 0
+
+    GenerationCompleteEvent:
+      type: object
+      required:
+        - project_id
+        - status
+        - total_files
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed]
+        total_files:
+          type: integer
+          minimum: 0
+
+    GenerationErrorEvent:
+      type: object
+      required:
+        - project_id
+        - status
+        - error
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [failed]
+        error:
+          type: string
+          description: Error message

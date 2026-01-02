@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+猜数字游戏 (1-100)
+===================
+一个经典的猜数字游戏，随机生成1-100之间的数字，
+用户通过输入猜测，程序提示大小，直到猜中为止。
+
+功能特性:
+- 随机数生成 (1-100)
+- 输入验证和错误处理
+- 彩色终端界面
+- 猜测次数统计
+- 重新开始功能
+"""
+
+import random
+import sys
+import os
+
+# ============================================================================
+# 常量定义
+# ============================================================================
+
+# 数字范围常量
+MIN_NUMBER = 1
+MAX_NUMBER = 100
+
+# 颜色代码 (ANSI转义序列)
+class Colors:
+    """终端颜色定义"""
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    
+    # 前景色
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    
+    # 背景色
+    BG_RED = '\033[41m'
+    BG_GREEN = '\033[42m'
+    BG_YELLOW = '\033[43m'
+
+# ============================================================================
+# 工具函数
+# ============================================================================
+
+def clear_screen():
+    """清屏函数，跨平台兼容"""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def print_banner():
+    """打印游戏欢迎横幅"""
+    print(f"""
+{Colors.CYAN}{Colors.BOLD}
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║              🎮  猜 数 字 游 戏  🎮                         ║
+║                                                            ║
+║              在 1-100 之间猜一个数字                        ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+{Colors.RESET}
+""")
+
+
+def print_success(message):
+    """打印成功消息（绿色）"""
+    print(f"{Colors.GREEN}✓ {message}{Colors.RESET}")
+
+
+def print_error(message):
+    """打印错误消息（红色）"""
+    print(f"{Colors.RED}✗ {message}{Colors.RESET}")
+
+
+def print_hint(message):
+    """打印提示消息（黄色）"""
+    print(f"{Colors.YELLOW}➜ {message}{Colors.RESET}")
+
+
+def print_info(message):
+    """打印信息消息（蓝色）"""
+    print(f"{Colors.BLUE}ℹ {message}{Colors.RESET}")
+
+
+# ============================================================================
+# 核心游戏逻辑
+# ============================================================================
+
+class NumberGuessingGame:
+    """猜数字游戏类"""
+    
+    def __init__(self):
+        """初始化游戏"""
+        self.target_number = None
+        self.guess_count = 0
+        self.game_over = False
+        self.best_score = float('inf')  # 最佳记录
+    
+    def generate_number(self):
+        """生成随机目标数字"""
+        self.target_number = random.randint(MIN_NUMBER, MAX_NUMBER)
+        self.guess_count = 0
+        self.game_over = False
+    
+    def validate_input(self, user_input):
+        """
+        验证用户输入
+        
+        Args:
+            user_input: 原始输入字符串
+            
+        Returns:
+            tuple: (is_valid, number, error_message)
+        """
+        # 检查是否为空
+        if not user_input or not user_input.strip():
+            return False, None, "输入不能为空，请输入一个数字"
+        
+        # 去除空格
+        user_input = user_input.strip()
+        
+        # 检查是否为数字
+        if not user_input.isdigit():
+            return False, None, f"'{user_input}' 不是有效的数字，请输入1-100之间的整数"
+        
+        # 转换为整数
+        number = int(user_input)
+        
+        # 检查范围
+        if number < MIN_NUMBER:
+            return False, None, f"数字太小了！请输入{MIN_NUMBER}-{MAX_NUMBER}之间的数字"
+        elif number > MAX_NUMBER:
+            return False, None, f"数字太大了！请输入{MIN_NUMBER}-{MAX_NUMBER}之间的数字"
+        
+        return True, number, None
+    
+    def get_guess(self):
+        """获取用户猜测"""
+        while True:
+            try:
+                print(f"\n{Colors.CYAN}请输入你的猜测 ({MIN_NUMBER}-{MAX_NUMBER}): {Colors.RESET}", end='')
+                user_input = input().strip()
+                
+                is_valid, number, error_msg = self.validate_input(user_input)
+                
+                if not is_valid:
+                    print_error(error_msg)
+                    continue
+                
+                return number
+                
+            except KeyboardInterrupt:
+                print(f"\n\n{Colors.YELLOW}检测到用户中断，正在退出游戏...{Colors.RESET}")
+                sys.exit(0)
+            except EOFError:
+                print_error("输入流结束")
+                sys.exit(1)
+    
+    def compare_guess(self, guess):
+        """
+        比较猜测与目标数字
+        
+        Args:
+            guess: 用户猜测的数字
+            
+        Returns:
+            int: -1=太小, 0=正确, 1=太大
+        """
+        self.guess_count += 1
+        
+        if guess < self.target_number:
+            return -1
+        elif guess > self.target_number:
+            return 1
+        else:
+            return 0
+    
+    def play_round(self):
+        """进行一轮游戏"""
+        self.generate_number()
+        
+        print_info(f"游戏开始！请在 {MIN_NUMBER}-{MAX_NUMBER} 之间猜一个数字")
+        print_hint("提示: 你可以通过二分查找策略更快找到答案\n")
+        
+        while not self.game_over:
+            guess = self.get_guess()
+            comparison = self.compare_guess(guess)
+            
+            if comparison == -1:
+                print_hint(f"太小了！已猜测 {self.guess_count} 次")
+            elif comparison == 1:
+                print_hint(f"太大了！已猜测 {self.guess_count} 次")
+            else:
+                self.game_over = True
+                self.show_win_screen()
+    
+    def show_win_screen(self):
+        """显示胜利画面"""
+        print(f"""
+{Colors.GREEN}{Colors.BOLD}
+╔════════════════════════════════════════════════════════# PHASE 2: 技术规划文档
+
+## 猜数字游戏技术实现计划
+
+---
+
+## 一、总体架构与设计模式
+
+### 1.1 架构概述
+
+本项目采用**分层架构模式**设计，将用户界面、业务逻辑和数据处理三个关注点进行清晰分离。这种架构确保了代码的可维护性、可扩展性和可测试性，同时保持了单文件分发的便捷性。

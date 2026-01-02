@@ -7,6 +7,12 @@ Auto-generated from all feature plans. Last updated: 2025-12-31
 - File system (local projects/ folder for generated code persistence) (001-ai-code-flow)
 - Python 3.11 (Backend), Node.js v20 (Frontend) + FastAPI (Backend API), MiniMax/OpenAI SDK (AI), httpx (HTTP client), Pygame (Code generation), React/Next.js (Frontend) (001-ai-code-flow)
 - File system (generated code files in projects/ folder), transient session history (001-ai-code-flow)
+- Python 3.11 (Factory/Backend), Node.js v20 (Librarian/Frontend) + FastAPI (Factory), existing frontend stack (React/Vite) (001-handover-architecture)
+- File system (projects/{uuid}/ directory structure) (001-handover-architecture)
+- Python 3.11 (Factory/Backend), Node.js v20 (Librarian/Frontend) + SSE streaming, file system operations, JSON parsing, pathlib (001-realtime-workbench)
+- File system (physical project directories on disk) (001-realtime-workbench)
+- Next.js 14+ with Node.js v20 (LTS) - Monolith Architecture + MiniMax API, Next.js API Routes, Server-Sent Events, Node.js fs (001-realtime-workbench)
+- File system (physical project directories via Node.js fs) (001-realtime-workbench)
 
 - Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API (001-ai-code-flow)
 
@@ -27,10 +33,10 @@ cd src; pytest; ruff check .
 Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked): Follow standard conventions
 
 ## Recent Changes
-- 001-ai-code-flow: Added Python 3.11 (Backend), Node.js v20 (Frontend) + FastAPI (Backend API), MiniMax/OpenAI SDK (AI), httpx (HTTP client), Pygame (Code generation), React/Next.js (Frontend)
-- 001-ai-code-flow: Added Python 3.11 (locked by Constitution Article I) + OpenAI SDK >=1.0.0, MiniMax API (via OpenAI compatibility), FastAPI (existing)
+- 001-realtime-workbench: Added Next.js 14+ with Node.js v20 (LTS) - Monolith Architecture + MiniMax API, Next.js API Routes, Server-Sent Events, Node.js fs
+- 001-realtime-workbench: Added Python 3.11 (Factory/Backend), Node.js v20 (Librarian/Frontend) + SSE streaming, file system operations, JSON parsing, pathlib
+- 001-handover-architecture: Added Python 3.11 (Factory/Backend), Node.js v20 (Librarian/Frontend) + FastAPI (Factory), existing frontend stack (React/Vite)
 
-- 001-ai-code-flow: Added Node.js v20 (LTS) for frontend, Python 3.11 for backend (constitution-locked) + Anthropic SDK (@anthropic-ai/sdk) for MiniMax AI integration, FastAPI for backend API
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

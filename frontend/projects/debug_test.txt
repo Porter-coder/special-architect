@@ -1,0 +1,4 @@
+SMOKE TEST - 2026-01-02T09:07:21.316Z
+API Key: sk-cp
+CWD: G:\MYPROGRAM\SPECIAL\speclite_rebuild\frontend\src
+PROJECTS_ROOT: ../projects
