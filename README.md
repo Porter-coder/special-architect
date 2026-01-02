@@ -125,8 +125,7 @@ import requests
 # Generate code via API
 response = requests.post(
     "http://localhost:8000/api/generate-code",
-    json={"user_input": "创建一个计算器应用"},
-    stream=True
+    json={"user_input": "创建一个计算器应用"}
 )
 
 # Handle streaming response
@@ -202,11 +201,12 @@ for line in response.iter_lines():
 
 ### Key Design Principles
 
-1. **Educational Transparency**: Users learn development processes
-2. **SDK Compatibility**: Seamless OpenAI/MiniMax switching
-3. **Windows Native**: Full Windows environment support
-4. **Concurrent Safety**: Proper multi-user management
-5. **Error Resilience**: Comprehensive Chinese error messages
+1. **Educational Transparency**: Users learn development processes through progressive status feedback
+2. **Status Polling + Content Replay**: System provides educational waiting messages during generation and replays content upon completion (not real-time streaming)
+3. **SDK Compatibility**: Seamless OpenAI/MiniMax switching
+4. **Windows Native**: Full Windows environment support
+5. **Concurrent Safety**: Proper multi-user management
+6. **Error Resilience**: Comprehensive Chinese error messages
 
 ## 🧪 Testing
 
@@ -290,7 +290,7 @@ Error: VENV_NOT_ACTIVATED
 ```powershell
 cd backend
 .venv\Scripts\activate
-python -c "import sys; print(sys.prefix)"
+(Get-Command python).Source
 ```
 
 **Configuration Missing**
