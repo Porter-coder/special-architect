@@ -11,6 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import UUID
+from zipfile import ZipFile
+from io import BytesIO
 
 from ..config import get_config
 from ..logging_config import get_logger
@@ -198,6 +200,39 @@ class ProjectService:
         except Exception as e:
             logger.error(f"Failed to get project files {project_id}: {e}")
             return {}
+
+    async def create_project_zip(self, project_id: UUID) -> Optional[BytesIO]:
+        """
+        Create a ZIP archive containing all project files.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            BytesIO containing ZIP data, or None if failed
+        """
+        try:
+            # Get all project files
+            files = await self.get_project_files(project_id)
+
+            if not files:
+                logger.warning(f"No files found for project {project_id}")
+                return None
+
+            # Create ZIP in memory
+            zip_buffer = BytesIO()
+
+            with ZipFile(zip_buffer, 'w') as zip_file:
+                for file_path, content in files.items():
+                    # Write file content to ZIP
+                    zip_file.writestr(file_path, content)
+
+            zip_buffer.seek(0)
+            return zip_buffer
+
+        except Exception as e:
+            logger.error(f"Failed to create ZIP for project {project_id}: {e}")
+            return None
 
     def get_project_list(self) -> List[str]:
         """

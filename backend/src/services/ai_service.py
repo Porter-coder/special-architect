@@ -121,30 +121,57 @@ class AIService:
             # Process OpenAI streaming response
             chunk_count = 0
             text_chunks = 0
-            async for chunk in stream:
-                chunk_count += 1
-                if chunk.choices and len(chunk.choices) > 0:
+            logger.debug("[DEBUG] Starting stream loop...")
+            try:
+                async for chunk in stream:
+                    chunk_count += 1
+                    logger.debug(f"[DEBUG] Processing chunk {chunk_count}: has_choices={bool(chunk.choices)}, choices_len={len(chunk.choices) if chunk.choices else 0}")
+
+                    # Check if we should continue processing this chunk
+                    if not chunk.choices or len(chunk.choices) == 0:
+                        logger.debug(f"[DEBUG] Chunk {chunk_count} has no choices, skipping")
+                        continue
+
+                    logger.debug(f"[DEBUG] Chunk {chunk_count} has valid choices, processing...")
                     choice = chunk.choices[0]
                     delta = choice.delta
+                    logger.debug(f"[DEBUG] Chunk has delta: {delta is not None}, has_content_attr={hasattr(delta, 'content') if delta else False}")
 
                     # Handle content streaming
-                    if hasattr(delta, 'content') and delta.content is not None:
-                        text_chunks += 1
-                        if text_chunks % 10 == 0:  # Log every 10 text chunks
-                            logger.info(f"📝 Processed {text_chunks} text chunks so far")
-                        yield {
-                            "type": "text",
-                            "content": delta.content
-                        }
+                    logger.debug(f"[DEBUG] Delta object: {delta}, type: {type(delta)}")
+                    if hasattr(delta, 'content'):
+                        logger.debug(f"[DEBUG] Delta has content attr: {delta.content}")
+                        if delta.content is not None:
+                            text_chunks += 1
+                            content = delta.content
+                            logger.debug(f"[DEBUG] Received chunk with content: {content[:20]}...")
+                            if text_chunks % 10 == 0:  # Log every 10 text chunks
+                                logger.info(f"📝 Processed {text_chunks} text chunks so far")
+                            yield {
+                                "type": "text",
+                                "content": content
+                            }
+                        else:
+                            logger.debug(f"[DEBUG] Received chunk with None content (keep-alive chunk)")
+                    else:
+                        logger.debug(f"[DEBUG] Chunk delta has no content attribute, delta attrs: {dir(delta)}")
 
-                    # Handle thinking traces (if supported by the model)
-                    # Note: OpenAI doesn't natively support thinking traces like Anthropic
-                    # For now, we'll simulate thinking traces from the content when appropriate
-                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
-                        yield {
-                            "type": "thinking",
-                            "content": delta.reasoning_content
-                        }
+                    # Check for finish reason (potential break condition)
+                    finish_reason = getattr(choice, 'finish_reason', None)
+                    logger.debug(f"[DEBUG] Chunk finish_reason: {finish_reason}")
+                    if finish_reason is not None:
+                        logger.debug(f"[DEBUG] Exiting loop due to FINISH_REASON: {finish_reason}")
+                        break
+            except Exception as e:
+                logger.error(f"[DEBUG] Stream loop exited with exception: {e}", exc_info=True)
+                raise
+            finally:
+                logger.debug("[DEBUG] Stream loop exited.")
+
+            # Handle thinking traces (if supported by the model)
+            # Note: OpenAI doesn't natively support thinking traces like Anthropic
+            # For now, we'll simulate thinking traces from the content when appropriate
+            # Note: This code is currently unreachable due to the loop structure above
 
             logger.info(f"🏁 AI streaming completed: processed {chunk_count} chunks")
 

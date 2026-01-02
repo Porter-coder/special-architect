@@ -76,18 +76,20 @@ async def download_project(project_id: UUID):
         if not project.syntax_validated:
             raise HTTPException(status_code=400, detail="项目尚未通过语法验证，无法下载")
 
-        # Get all project files
-        files = await code_generation_service.project_service.get_project_files(project_id)
+        # Create ZIP archive
+        zip_buffer = await code_generation_service.project_service.create_project_zip(project_id)
 
-        # Create ZIP archive (simplified - in production would create actual ZIP)
-        # For now, return the main file content
-        main_content = files.get(project.main_file, "# Generated code file")
+        if not zip_buffer:
+            raise HTTPException(status_code=500, detail="创建ZIP文件失败")
+
+        # Get ZIP content
+        zip_content = zip_buffer.getvalue()
 
         return Response(
-            content=main_content,
-            media_type="text/plain",
+            content=zip_content,
+            media_type="application/zip",
             headers={
-                "Content-Disposition": f'attachment; filename="{project.project_name}_{project.main_file}"'
+                "Content-Disposition": f'attachment; filename="{project.project_name}.zip"'
             }
         )
 

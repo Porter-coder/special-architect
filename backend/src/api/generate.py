@@ -33,11 +33,21 @@ from ..services.code_generation_service import CodeGenerationService
 from ..services.concurrency_manager import concurrency_manager
 from ..services.container import container
 
+
+logger = logging.getLogger(__name__)
+
 # Initialize service - try to use container first, fallback to direct instantiation
 try:
     code_generation_service = container.code_generation_service
-except:
-    code_generation_service = CodeGenerationService()
+    logger.info("Code generation service initialized from container")
+except Exception as e:
+    logger.warning(f"Container initialization failed: {e}, falling back to direct instantiation")
+    try:
+        code_generation_service = CodeGenerationService()
+        logger.info("Code generation service initialized directly")
+    except Exception as e2:
+        logger.error(f"Direct instantiation also failed: {e2}")
+        raise
 
 # In-memory storage for active requests (in production, use Redis/database)
 active_requests: Dict[UUID, CodeGenerationRequest] = {}
@@ -53,7 +63,6 @@ content_buffer_locks: Dict[UUID, asyncio.Lock] = {}
 
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
 
 
 @router.post("/generate-code", response_model=Dict)
@@ -114,7 +123,13 @@ async def generate_code(request: GenerateRequest, background_tasks: BackgroundTa
         logger.info(f"代码生成请求已创建: {code_request.request_id} (活跃请求: {active_count})")
 
         # Start background processing
-        background_tasks.add_task(process_code_generation, code_request.request_id)
+        logger.info(f"Starting background task for request: {code_request.request_id}")
+        try:
+            background_tasks.add_task(process_code_generation, code_request.request_id)
+            logger.info(f"Background task scheduled successfully for request: {code_request.request_id}")
+        except Exception as e:
+            logger.error(f"Failed to schedule background task for request {code_request.request_id}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to start background processing")
 
         return {
             "request_id": str(code_request.request_id),
@@ -321,8 +336,10 @@ async def process_code_generation(request_id: UUID):
     Args:
         request_id: Unique request identifier
     """
+    logger.info(f"BACKGROUND TASK STARTED: process_code_generation called for request {request_id}")
     try:
         logger.info(f"开始处理代码生成请求: {request_id}")
+        logger.info(f"Active requests before processing: {list(active_requests.keys())}")
 
         # Get the request object
         if request_id not in active_requests:
