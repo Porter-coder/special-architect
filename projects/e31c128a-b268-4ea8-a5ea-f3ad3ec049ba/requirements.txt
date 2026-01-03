@@ -1,0 +1,13 @@
+# Todo List Manager - Dependencies
+# No external dependencies required
+# Uses only Python standard library:
+# - json
+# - os
+# - threading
+# - time
+# - datetime
+# - typing
+# - uuid
+
+# If you want to add optional features, you could install:
+# colorama>=0.4.0  # For colored terminal output (not required)

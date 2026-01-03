@@ -1,0 +1,7 @@
+# No external dependencies required
+# Uses only Python standard library modules:
+# - tkinter (GUI)
+# - math (mathematical operations)
+# - re (regular expressions)
+
+# Python 3.6 or higher recommended

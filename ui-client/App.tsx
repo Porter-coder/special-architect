@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LandingView from './components/LandingView';
 import WorkbenchView from './components/WorkbenchView';
 import { ViewState } from './types';
@@ -64,11 +65,38 @@ const App: React.FC = () => {
 
   return (
     <main className="antialiased text-zinc-200">
-      {view === 'landing' ? (
-        <LandingView onGenerate={handleGenerate} onDebugMode={handleDebugMode} />
-      ) : (
-        <WorkbenchView initialPrompt={userPrompt} projectId={projectId} debugMode={debugMode} />
-      )}
+      <AnimatePresence mode="wait">
+        {view === 'landing' ? (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+            transition={{
+              duration: 0.8,
+              ease: [0.25, 0.46, 0.45, 0.94],
+              exit: { duration: 0.6 }
+            }}
+            className="absolute inset-0"
+          >
+            <LandingView onGenerate={handleGenerate} onDebugMode={handleDebugMode} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="workbench"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{
+              duration: 0.6,
+              ease: [0.25, 0.46, 0.45, 0.94]
+            }}
+            className="absolute inset-0"
+          >
+            <WorkbenchView initialPrompt={userPrompt} projectId={projectId} debugMode={debugMode} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 };

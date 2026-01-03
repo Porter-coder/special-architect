@@ -1,0 +1,8 @@
+# BMI Calculator Dependencies
+# This application uses only Python standard library modules
+# No external dependencies required
+
+# If you want to add dependencies in the future, add them here
+# Example:
+# pygame>=2.0.0
+# requests

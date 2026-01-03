@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.1",
+    "@types/archiver": "^7.0.0",
+    "archiver": "^7.0.1",
     "lucide-react": "^0.469.0",
     "next": "14.2.16",
     "react": "^18",

@@ -1,0 +1,11 @@
+# No external dependencies required
+# This calculator uses only Python standard library modules:
+# - tkinter (GUI, included with Python)
+# - math (mathematical functions, included with Python)
+#
+# To run the application:
+# pip install -r requirements.txt
+# python main.py
+#
+# Note: requirements.txt is kept minimal as tkinter
+# is part of Python's standard library.

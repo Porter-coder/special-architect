@@ -9,7 +9,7 @@ import { parseGeneratedCode, generateRequirementsTxt } from '../../../lib/parser
 import { log } from '../../../lib/logger';
 import { ensureDirectory, writeFileAtomic, createProjectStructure, fileExists } from '../../../lib/fileSystem';
 import { DEFAULT_README, DEFAULT_REQUIREMENTS, DEFAULT_SPEC, DEFAULT_PLAN } from '../../../lib/templates';
-import { streams } from '../../../lib/store';
+import { streams, activeGenerations } from '../../../lib/store';
 
 // Configuration
 const MINIMAX_API_KEY = config.minimax.apiKey;
@@ -64,13 +64,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let body;
     try {
       body = await request.json();
-      console.log("[API] /generate received body:", body); // <--- ADD THIS
+      console.log("[API] /generate received body:", body);
     } catch (jsonError) {
       console.error("[API] JSON Parse Error:", jsonError);
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     const { prompt, projectId } = body;
+
+    // Check if there's already an active generation for this project
+    const existingController = activeGenerations.get(projectId);
+    if (existingController) {
+      console.log(`[API] Project ${projectId} already has an active generation, rejecting new request`);
+      return NextResponse.json(
+        { error: "Generation already in progress for this project" },
+        { status: 409 }
+      );
+    }
 
     log('GENERATE', 'Request parsed', {
       promptLength: prompt?.length || 0,
@@ -87,16 +97,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: '项目ID不能为空' }, { status: 400 });
     }
 
-    // Get SSE controller if available (optional for streaming)
-    const controller = streams.get(projectId);
-    const hasStreaming = !!controller;
+    // Wait for SSE connection to be established (up to 5 seconds)
+    let controller: ReadableStreamDefaultController | null = null;
+    let hasStreaming = false;
+    const maxWaitTime = 5000; // 5 seconds
+    const startTime = Date.now();
 
-    if (!hasStreaming) {
-      log('GENERATE', 'SSE not connected, proceeding without streaming', { projectId });
+    while (Date.now() - startTime < maxWaitTime) {
+      controller = streams.get(projectId);
+      if (controller) {
+        hasStreaming = true;
+        log('GENERATE', 'SSE connected, enabling streaming', { projectId });
+        break;
+      }
+      // Wait 100ms before checking again
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
+    if (!hasStreaming) {
+      log('GENERATE', 'SSE not connected within timeout, proceeding without streaming', { projectId });
+    }
+
+    // Create AbortController for this generation
+    const abortController = new AbortController();
+    activeGenerations.set(projectId, abortController);
+
     // Start generation asynchronously - trigger pattern
-    startGeneration(projectId, prompt, controller, hasStreaming);
+    console.log(`[API] About to call startGeneration with hasStreaming: ${hasStreaming}`);
+    startGeneration(projectId, prompt, controller, hasStreaming, abortController);
+    console.log(`[API] startGeneration called successfully`);
 
     log('GENERATE', 'Generation triggered', {
       projectId,
@@ -140,8 +169,9 @@ async function ensureCriticalFiles(projectId: string, projectDir: string, files:
 }
 
 // Async generation function - Trigger pattern with optional SSE streaming
-async function startGeneration(projectId: string, prompt: string, controller: ReadableStreamDefaultController | null, hasStreaming: boolean): Promise<void> {
+async function startGeneration(projectId: string, prompt: string, controller: ReadableStreamDefaultController | null, hasStreaming: boolean, abortController: AbortController): Promise<void> {
   console.log(`[GENERATION] Starting generation for project ${projectId} with prompt: ${prompt}`);
+  console.log(`[GENERATION] Streaming status - controller: ${!!controller}, hasStreaming: ${hasStreaming}`);
 
   const encoder = new TextEncoder();
 
@@ -151,6 +181,13 @@ async function startGeneration(projectId: string, prompt: string, controller: Re
 
     // Execute each phase
     for (const phase of PHASE_ORDER) {
+      // Check if generation was cancelled
+      if (abortController.signal.aborted) {
+        console.log(`[GENERATION] Generation cancelled for project: ${projectId}`);
+        activeGenerations.delete(projectId);
+        return;
+      }
+
       try {
         // Generate prompt
         const phasePrompt = generateUniversalPrompt(
@@ -319,6 +356,49 @@ if __name__ == "__main__":
       });
 
       await ensureDirectory(path.dirname(fullPath));
+
+      // Stream file content in chunks for real-time display
+      if (hasStreaming && controller) {
+        console.log(`[STREAMING] Starting to stream file: ${filePath}, content length: ${content.length}`);
+
+        const chunkSize = 50; // Smaller chunks for more frequent updates
+        for (let i = 0; i < content.length; i += chunkSize) {
+          const chunk = content.slice(i, i + chunkSize);
+          const contentEvent = JSON.stringify({
+            project_id: projectId,
+            type: 'file_content_update',
+            path: filePath,
+            content: chunk,
+            offset: i,
+            is_complete: false,
+            timestamp: new Date().toISOString()
+          });
+
+          console.log(`[STREAMING] Sending chunk for ${filePath}: offset ${i}, length ${chunk.length}`);
+          controller.enqueue(encoder.encode(`event: file_content_update\ndata: ${contentEvent}\n\n`));
+
+          // Small delay to create streaming effect
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+
+        // Send completion event
+        const completeEvent = JSON.stringify({
+          project_id: projectId,
+          type: 'file_content_update',
+          path: filePath,
+          content: '',
+          offset: content.length,
+          is_complete: true,
+          timestamp: new Date().toISOString()
+        });
+
+        console.log(`[STREAMING] Sending completion for ${filePath}`);
+        controller.enqueue(encoder.encode(`event: file_content_update\ndata: ${completeEvent}\n\n`));
+      } else {
+        console.log(`[STREAMING] Streaming disabled for ${filePath}, hasStreaming: ${hasStreaming}, controller: ${!!controller}`);
+      }
+
+      // Write the complete file atomically
       await writeFileAtomic(fullPath, content);
 
       // Send file created event via SSE (if connected)
@@ -348,6 +428,49 @@ if __name__ == "__main__":
       });
 
       await ensureDirectory(path.dirname(fullPath));
+
+      // Stream documentation file content in chunks for real-time display
+      if (hasStreaming && controller) {
+        console.log(`[STREAMING] Starting to stream doc file: ${filePath}, content length: ${content.length}`);
+
+        const chunkSize = 50; // Smaller chunks for more frequent updates
+        for (let i = 0; i < content.length; i += chunkSize) {
+          const chunk = content.slice(i, i + chunkSize);
+          const contentEvent = JSON.stringify({
+            project_id: projectId,
+            type: 'file_content_update',
+            path: filePath,
+            content: chunk,
+            offset: i,
+            is_complete: false,
+            timestamp: new Date().toISOString()
+          });
+
+          console.log(`[STREAMING] Sending doc chunk for ${filePath}: offset ${i}, length ${chunk.length}`);
+          controller.enqueue(encoder.encode(`event: file_content_update\ndata: ${contentEvent}\n\n`));
+
+          // Small delay to create streaming effect
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+
+        // Send completion event
+        const completeEvent = JSON.stringify({
+          project_id: projectId,
+          type: 'file_content_update',
+          path: filePath,
+          content: '',
+          offset: content.length,
+          is_complete: true,
+          timestamp: new Date().toISOString()
+        });
+
+        console.log(`[STREAMING] Sending doc completion for ${filePath}`);
+        controller.enqueue(encoder.encode(`event: file_content_update\ndata: ${completeEvent}\n\n`));
+      } else {
+        console.log(`[STREAMING] Streaming disabled for doc ${filePath}, hasStreaming: ${hasStreaming}, controller: ${!!controller}`);
+      }
+
+      // Write the complete documentation file atomically
       await writeFileAtomic(fullPath, content);
 
       // Send documentation file created event via SSE (if connected)
@@ -379,9 +502,11 @@ if __name__ == "__main__":
     }
 
     log('GENERATE', 'Generation completed successfully', { projectId });
+    activeGenerations.delete(projectId);
 
   } catch (error) {
     console.error('[GENERATION] Generation failed:', error);
+    activeGenerations.delete(projectId);
 
     // Send error event via SSE (if connected)
     if (hasStreaming && controller) {

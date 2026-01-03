@@ -1,0 +1,6 @@
+# Todo List Application Dependencies
+# This application uses only Python standard library
+# No external packages required
+
+# Python 3.7+ is required (standard library only)
+# No third-party dependencies needed

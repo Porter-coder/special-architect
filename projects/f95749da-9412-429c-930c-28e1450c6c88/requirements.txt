@@ -1,0 +1,12 @@
+# Timer Application Dependencies
+# No external dependencies required - uses Python standard library only
+# Built with tkinter (included with Python)
+
+# Optional: For enhanced GUI appearance, uncomment below
+# pygame>=2.0.0
+
+# If you want to use custom fonts, you may need:
+# pygame
+
+# For development and testing:
+# pytest>=7.0.0

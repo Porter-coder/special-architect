@@ -1,0 +1,6 @@
+# No external dependencies required
+# This application uses only Python standard library modules:
+# - json (built-in)
+# - os (built-in)
+# - datetime (built-in)
+# - enum (built-in)

@@ -1,0 +1,10 @@
+# This application uses only Python standard library modules
+# No external dependencies required
+
+# Python standard library modules used:
+# - tkinter (GUI, included with Python on most systems)
+# - math (mathematical operations)
+# - re (regular expressions)
+# - os (operating system interface)
+
+# No pip packages required - runs with standard Python installation
